@@ -72,5 +72,9 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+
+  "bin": {
+  "repo-analyzer": "dist/cli/index.js"
   }
 }
