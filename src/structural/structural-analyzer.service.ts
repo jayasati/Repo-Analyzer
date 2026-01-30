@@ -24,6 +24,18 @@ export class StructuralAnalyzerService {
     nodes: Map<string, any>,
     edges: { from: string; to: string }[],
   ) {
+    // ✅ Always traverse folders
+    if (node.type === 'folder') {
+      node.children?.forEach(child =>
+        this.walk(child, nodes, edges)
+      );
+      return;
+    }
+    
+    if (!node.path.endsWith('.ts') && !node.path.endsWith('.js')) {
+        return;
+    }
+
     if (node.type === 'file') {
       nodes.set(node.path, {
         id: node.path,

@@ -1,24 +1,40 @@
-const IMPORT_REGEXES = [
-  /import\s+.*?from\s+['"](.*)['"]/g,          // JS/TS
-  /require\(['"](.*)['"]\)/g,                  // CommonJS
-  /#include\s+[<"](.*)[>"]/g,                  // C/C++
-  /from\s+([\w\.]+)\s+import/g,                // Python
-];
-
-export function extractImports(
-  content: string
-): string[] {
+export function extractImports(content: string): string[] {
   const imports: string[] = [];
 
-  for (const regex of IMPORT_REGEXES) {
-    let match;
-    while ((match = regex.exec(content)) !== null) {
+  const patterns = [
+    // ES / TS imports (default, named, type, multiline-safe)
+    /import\s+(?:type\s+)?[^'"]*?['"]([^'"]+)['"]/g,
+
+    // Side-effect imports: import './setup';
+    /import\s+['"]([^'"]+)['"]/g,
+
+    // CommonJS
+    /require\(\s*['"]([^'"]+)['"]\s*\)/g,
+
+    // Python
+    /from\s+([a-zA-Z0-9_.]+)\s+import\s+/g,
+
+    // C/C++
+    /#include\s+[<"]([^">]+)[">]/g,
+  ];
+
+  for (const pattern of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = pattern.exec(content)) !== null) {
       imports.push(match[1]);
     }
   }
 
   return imports;
 }
+
+
+/*
+Improvements -->
+Each file gets a fresh regex
+No shared lastIndex
+Works consistently for local + GitHub
+*/
 
 /*
 This is not perfect, but:

@@ -5,4 +5,5 @@ export const DEFAULT_IGNORED_FOLDERS = [
   'build',
   '.next',
   '.cache',
+  '.tmp',
 ];
