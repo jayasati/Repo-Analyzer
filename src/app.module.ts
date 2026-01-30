@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
+import { InputModule } from './input/input.module';
 
 @Module({
-  imports: [],
+  imports: [InputModule],
   controllers: [],
   providers: [],
 })
