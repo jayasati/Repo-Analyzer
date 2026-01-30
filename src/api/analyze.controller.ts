@@ -1,4 +1,4 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException,InternalServerErrorException, } from '@nestjs/common';
 import { AnalyzerService } from '../core/analyzer.service';
 
 @Controller('analyze')
@@ -11,10 +11,20 @@ export class AnalyzeController {
       throw new BadRequestException('source is required');
     }
 
-    if (body.source.startsWith('http')) {
-      return this.analyzer.analyzeGitHub(body.source);
-    }
 
-    return this.analyzer.analyzeLocal(body.source);
+    try{
+      return body.source.startsWith('http')
+      ?await this.analyzer.analyzeGitHub(body.source)
+      : await this.analyzer.analyzeLocal(body.source);
+    }catch(err:any){
+      throw new InternalServerErrorException(
+        err?.message || 'Analysis Failed',
+      );
+    }
+    // if (body.source.startsWith('http')) {
+    //   return this.analyzer.analyzeGitHub(body.source);
+    // }
+
+    // return this.analyzer.analyzeLocal(body.source);
   }
 }
