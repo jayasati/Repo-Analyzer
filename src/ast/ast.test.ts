@@ -4,4 +4,5 @@ const analyzer = new AstAnalyzerService();
 
 const result = analyzer.analyze();
 
-console.log(JSON.stringify(result.slice(0, 5), null, 2));
+// Print only a few entries to keep output readable
+console.log(JSON.stringify(result.slice(0, 3), null, 2));
