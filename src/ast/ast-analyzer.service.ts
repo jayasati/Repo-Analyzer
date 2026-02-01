@@ -1,4 +1,21 @@
-import { Project, SyntaxKind } from 'ts-morph';
+import { Project, SyntaxKind , Node, ClassDeclaration  } from 'ts-morph';
+
+type ConstructorParam = {
+  name: string;
+  type: string;
+};
+
+type AstClassInfo = {
+  name: string;
+  role: 'controller' | 'service' | 'module' | 'unknown';
+  constructorParams?: ConstructorParam[];
+  moduleMetadata?: Record<string, string[]>;
+};
+
+type AstFileInfo = {
+  filePath: string;
+  classes: AstClassInfo[];
+};
 
 export class AstAnalyzerService {
   private project: Project;
@@ -31,6 +48,9 @@ export class AstAnalyzerService {
           })) ?? [];
         
         const role = this.classifyNestRole(decorators);
+        const moduleMetadata = role === 'module'
+        ? this.extractModuleMetadata(cls)
+        : null;
 
         return {
           name: cls.getName(),
@@ -39,6 +59,7 @@ export class AstAnalyzerService {
           methods,
           properties,
           constructorParams,
+          moduleMetadata,
         };
       });
 
@@ -61,6 +82,71 @@ export class AstAnalyzerService {
 
         return 'unknown';
     }
+
+    private extractModuleMetadata(cls: any) {
+        const moduleDecorator = cls.getDecorator('Module');
+        if (!moduleDecorator) return null;
+
+        const arg = moduleDecorator.getArguments()[0];
+        if (!arg) return null;
+
+        const metadata: Record<string, string[]> = {};
+
+        //Node is the base AST type in ts-morph
+        arg.forEachChild((child:Node) => {
+            if (!Node.isPropertyAssignment(child)) return;
+            
+            const key = child.getName();
+            const value = child.getInitializer();
+
+            if (!value) return;
+
+            if (Node.isArrayLiteralExpression(value)) {
+                metadata[key] = value
+                            .getElements()
+                            .map(el => el.getText());
+            }
+        });
+
+        return metadata;
+    }
+
+    buildDependencyEdges(astResult: AstFileInfo[]) {
+    const edges: { from: string; to: string; type: string }[] = [];
+
+    for (const file of astResult) {
+        for (const cls of file.classes) {
+
+        // 🔹 Constructor-based dependency injection
+        cls.constructorParams?.forEach(param => {
+            edges.push({
+            from: cls.name,
+            to: param.type,
+            type: 'constructor-injection',
+            });
+        });
+
+        // 🔹 NestJS module wiring
+        if (cls.role === 'module' && cls.moduleMetadata) {
+            for (const [key, values] of Object.entries(cls.moduleMetadata)) {
+            values.forEach(value => {
+                edges.push({
+                from: cls.name,
+                to: value.replace(/[\[\]\s]/g, ''),
+                type: `module-${key}`,
+                });
+            });
+            }
+        }
+        }
+    }
+
+    return edges;
+    }
+
+
+
+
 
 
 }

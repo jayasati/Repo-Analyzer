@@ -2,7 +2,9 @@ import { AstAnalyzerService } from './ast-analyzer.service';
 
 const analyzer = new AstAnalyzerService();
 
-const result = analyzer.analyze();
+const ast = analyzer.analyze();
 
-// Print only a few entries to keep output readable
-console.log(JSON.stringify(result.slice(0, 3), null, 2));
+const edges = analyzer.buildDependencyEdges(ast);
+
+console.log(JSON.stringify(edges.slice(0, 10), null, 2));
+
