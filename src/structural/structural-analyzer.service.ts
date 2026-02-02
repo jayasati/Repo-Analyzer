@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs-extra';
 import { FileNode } from '../core/types/file-node.type';
-import { DependencyGraph } from '../graph/graph.types';
+import { DependencyGraph } from '../graph/unified-graph.types';
 import { extractImports } from './import-extractor';
 
 @Injectable()

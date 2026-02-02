@@ -1,0 +1,37 @@
+export type NodeType =
+  | 'file'
+  | 'class'
+  | 'module'
+  | 'service'
+  | 'controller'
+  | 'unknown';
+
+export type EdgeType =
+  | 'import'
+  | 'constructor-injection'
+  | 'module-import'
+  | 'module-provider'
+  | 'module-controller';
+
+export interface GraphNode {
+  id: string;
+  type: NodeType;
+  source: 'structural' | 'semantic';
+}
+
+export interface GraphEdge {
+  from: string;
+  to: string;
+  type: EdgeType;
+}
+
+export interface UnifiedGraph {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+}
+
+//This keeps structural analysis isolated and simple.
+export interface DependencyGraph {
+  nodes: { id: string; type: 'file' }[];
+  edges: { from: string; to: string }[];
+}

@@ -144,6 +144,21 @@ export class AstAnalyzerService {
     return edges;
     }
 
+    buildSemanticNodes(astResult: AstFileInfo[]) {
+        const nodes: { id: string; type: string }[] = [];
+
+        for (const file of astResult) {
+            for (const cls of file.classes) {
+            nodes.push({
+                id: cls.name,
+                type: cls.role, // controller | service | module | unknown
+            });
+            }
+        }
+
+        return nodes;
+    }
+
 
 
 

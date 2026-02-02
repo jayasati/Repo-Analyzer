@@ -1,5 +1,5 @@
 import { DetectionResult } from '../../detection/detection-result.type';
-import { DependencyGraph } from '../../graph/graph.types';
+import { DependencyGraph } from '../../graph/unified-graph.types';
 
 export interface AnalysisResult {
   projectName: string;
