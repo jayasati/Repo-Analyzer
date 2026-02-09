@@ -35,27 +35,34 @@ export class DiagramPrepService {
   // ========================
   // COMPONENT DIAGRAM
   // ========================
-  forComponentDiagram(graph: UnifiedGraph): DiagramGraph {
-    const edges = this.normalizeEdges(
-      graph.edges.filter(e => e.type.startsWith('module-'))
-    );
+forComponentDiagram(graph: UnifiedGraph): DiagramGraph {
+  const moduleNodes = new Set(
+    graph.nodes
+      .filter(n => n.type === 'module')
+      .map(n => this.normalizeId(n.id))
+  );
 
-    const nodeIds = new Set(
-      edges.flatMap(e => [e.from, e.to])
-    );
+  const edges = this.normalizeEdges(
+    graph.edges.filter(
+      e =>
+        e.type.startsWith('module-') &&
+        moduleNodes.has(this.normalizeId(e.from)) &&
+        moduleNodes.has(this.normalizeId(e.to))
+    )
+  );
 
-    const nodes = graph.nodes
-      .filter(n =>
-        nodeIds.has(this.normalizeId(n.id)) &&
-        n.type === 'module'
-      )
-      .map(n => ({
-        ...n,
-        id: this.normalizeId(n.id),
-      }));
+  const nodes = graph.nodes
+    .filter(n =>
+      n.type === 'module' &&
+      moduleNodes.has(this.normalizeId(n.id))
+    )
+    .map(n => ({
+      ...n,
+      id: this.normalizeId(n.id),
+    }));
 
-    return { nodes, edges };
-  }
+  return { nodes, edges };
+}
 
   // ========================
   // SEQUENCE DIAGRAM

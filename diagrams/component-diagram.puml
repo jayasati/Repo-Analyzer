@@ -10,16 +10,10 @@ component LocalScannerModule
 AppModule --> CoreModule
 AppModule --> ApiModule
 ApiModule --> CoreModule
-ApiModule --> AnalyzeController
 CoreModule --> InputModule
 CoreModule --> DetectionModule
 CoreModule --> StructuralModule
-CoreModule --> AnalyzerService
-DetectionModule --> LanguageDetectorService
 InputModule --> LocalScannerModule
 InputModule --> GithubScannerModule
-StructuralModule --> StructuralAnalyzerService
 GithubScannerModule --> LocalScannerModule
-GithubScannerModule --> GithubScannerService
-LocalScannerModule --> LocalScannerService
 @enduml
