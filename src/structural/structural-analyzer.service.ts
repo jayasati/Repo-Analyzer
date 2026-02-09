@@ -3,13 +3,13 @@ import * as fs from 'fs-extra';
 import { FileNode } from '../core/types/file-node.type';
 import { DependencyGraph } from '../graph/unified-graph.types';
 import { extractImports } from './import-extractor';
+import { GraphEdge } from '../graph/unified-graph.types';
 
 @Injectable()
 export class StructuralAnalyzerService {
-
   analyze(fileTree: FileNode): DependencyGraph {
     const nodes = new Map<string, any>();
-    const edges: { from: string; to: string }[] = [];
+    const edges: GraphEdge[] = [];
 
     this.walk(fileTree, nodes, edges);
 
@@ -22,43 +22,35 @@ export class StructuralAnalyzerService {
   private walk(
     node: FileNode,
     nodes: Map<string, any>,
-    edges: { from: string; to: string }[],
+    edges: GraphEdge[],
   ) {
-    // ✅ Always traverse folders
     if (node.type === 'folder') {
       node.children?.forEach(child =>
         this.walk(child, nodes, edges)
       );
       return;
     }
-    
+
     if (!node.path.endsWith('.ts') && !node.path.endsWith('.js')) {
-        return;
+      return;
     }
 
-    if (node.type === 'file') {
-      nodes.set(node.path, {
-        id: node.path,
-        type: 'file',
+    nodes.set(node.path, {
+      id: node.path,
+      type: 'file',
+    });
+
+    try {
+      const content = fs.readFileSync(node.path, 'utf-8');
+      const imports = extractImports(content);
+
+      imports.forEach(imp => {
+        edges.push({
+          from: node.path,
+          to: imp,
+          type: 'import',
+        }as GraphEdge);
       });
-
-      try {
-        const content = fs.readFileSync(node.path, 'utf-8');
-        const imports = extractImports(content);
-
-        imports.forEach(imp => {
-          edges.push({
-            from: node.path,
-            to: imp,
-          });
-        });
-      } catch {
-        // Ignore binary / unreadable files
-      }
-    }
-
-    node.children?.forEach(child =>
-      this.walk(child, nodes, edges)
-    );
+    } catch {}
   }
 }

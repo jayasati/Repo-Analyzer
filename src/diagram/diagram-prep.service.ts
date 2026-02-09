@@ -1,4 +1,4 @@
-import { UnifiedGraph, GraphNode, GraphEdge } from '../graph/unified-graph.types';
+import { UnifiedGraph, GraphEdge, GraphNode } from '../graph/unified-graph.types';
 
 export interface DiagramGraph {
   nodes: GraphNode[];
@@ -6,53 +6,133 @@ export interface DiagramGraph {
 }
 
 export class DiagramPrepService {
+
+  // ========================
+  // CLASS DIAGRAM
+  // ========================
   forClassDiagram(graph: UnifiedGraph): DiagramGraph {
-    return {
-      nodes: graph.nodes.filter(n =>
-        ['class', 'service', 'controller'].includes(n.type),
-      ),
-      edges: graph.edges.filter(e =>
-        ['constructor-injection'].includes(e.type),
-      ),
-    };
+    const edges = this.normalizeEdges(
+      graph.edges.filter(e => e.type === 'constructor-injection')
+    );
+
+    const nodeIds = new Set(
+      edges.flatMap(e => [e.from, e.to])
+    );
+
+    const nodes = graph.nodes
+      .filter(n =>
+        nodeIds.has(this.normalizeId(n.id)) &&
+        ['controller', 'service', 'class'].includes(n.type)
+      )
+      .map(n => ({
+        ...n,
+        id: this.normalizeId(n.id),
+      }));
+
+    return { nodes, edges };
   }
 
+  // ========================
+  // COMPONENT DIAGRAM
+  // ========================
   forComponentDiagram(graph: UnifiedGraph): DiagramGraph {
-    return {
-      nodes: graph.nodes.filter(n =>
-        ['module'].includes(n.type),
-      ),
-      edges: graph.edges.filter(e =>
-        e.type.startsWith('module-'),
-      ),
-    };
+    const edges = this.normalizeEdges(
+      graph.edges.filter(e => e.type.startsWith('module-'))
+    );
+
+    const nodeIds = new Set(
+      edges.flatMap(e => [e.from, e.to])
+    );
+
+    const nodes = graph.nodes
+      .filter(n =>
+        nodeIds.has(this.normalizeId(n.id)) &&
+        n.type === 'module'
+      )
+      .map(n => ({
+        ...n,
+        id: this.normalizeId(n.id),
+      }));
+
+    return { nodes, edges };
   }
 
+  // ========================
+  // SEQUENCE DIAGRAM
+  // ========================
   forSequenceDiagram(
     graph: UnifiedGraph,
     entryPoint: string,
+    maxDepth = 3,
   ): DiagramGraph {
-    const edges: GraphEdge[] = [];
-    const visited = new Set<string>();
 
-    const walk = (node: string) => {
-      if (visited.has(node)) return;
+    const edges = this.normalizeEdges(
+      graph.edges.filter(e => e.type === 'constructor-injection')
+    );
+
+    const visited = new Set<string>();
+    const resultEdges: GraphEdge[] = [];
+
+    const walk = (node: string, depth: number) => {
+      if (depth > maxDepth || visited.has(node)) return;
       visited.add(node);
 
-      graph.edges
+      edges
         .filter(e => e.from === node)
         .forEach(e => {
-          edges.push(e);
-          walk(e.to);
+          resultEdges.push(e);
+          walk(e.to, depth + 1);
         });
     };
 
-    walk(entryPoint);
+    walk(this.normalizeId(entryPoint), 0);
 
-    const nodes = graph.nodes.filter(n =>
-      visited.has(n.id),
-    );
+    const nodes = graph.nodes
+      .filter(n => visited.has(this.normalizeId(n.id)))
+      .map(n => ({
+        ...n,
+        id: this.normalizeId(n.id),
+      }));
 
-    return { nodes, edges };
+    return { nodes, edges: resultEdges };
+  }
+
+  // ========================
+  // HELPERS
+  // ========================
+  private normalizeId(id: string): string {
+    if (id.includes('import(')) {
+      const match = id.match(/\.([A-Za-z0-9_]+)\)?$/);
+      return match ? match[1] : id;
+    }
+
+    if (id.includes('/') || id.includes('\\')) {
+      return id.split(/[\\/]/).pop()!.replace(/\.(ts|js)$/, '');
+    }
+
+    return id;
+  }
+
+  private isValidNode(id: string): boolean {
+    if (['string', 'number', 'boolean', 'any', 'unknown', 'void'].includes(id))
+      return false;
+
+    if (['@nestjs', 'fs', 'path', 'rxjs'].some(p => id.startsWith(p)))
+      return false;
+
+    return true;
+  }
+
+  private normalizeEdges(edges: GraphEdge[]): GraphEdge[] {
+    return edges
+      .map(e => ({
+        ...e,
+        from: this.normalizeId(e.from),
+        to: this.normalizeId(e.to),
+      }))
+      .filter(e =>
+        this.isValidNode(e.from) &&
+        this.isValidNode(e.to)
+      );
   }
 }

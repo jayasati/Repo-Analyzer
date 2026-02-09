@@ -1,0 +1,13 @@
+@startuml
+class AnalyzeController
+class AnalyzerService
+class LanguageDetectorService
+class StructuralAnalyzerService
+class GithubScannerService
+class LocalScannerService
+AnalyzeController --> AnalyzerService
+AnalyzerService --> LocalScannerService
+AnalyzerService --> GithubScannerService
+AnalyzerService --> LanguageDetectorService
+AnalyzerService --> StructuralAnalyzerService
+@enduml

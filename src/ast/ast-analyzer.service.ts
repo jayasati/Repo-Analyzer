@@ -1,4 +1,5 @@
-import { Project, SyntaxKind , Node, ClassDeclaration  } from 'ts-morph';
+import { Project, SyntaxKind, Node, ClassDeclaration } from 'ts-morph';
+import { GraphEdge, EdgeType } from '../graph/unified-graph.types';
 
 type ConstructorParam = {
   name: string;
@@ -46,11 +47,11 @@ export class AstAnalyzerService {
             name: p.getName(),
             type: p.getType().getText(),
           })) ?? [];
-        
+
         const role = this.classifyNestRole(decorators);
         const moduleMetadata = role === 'module'
-        ? this.extractModuleMetadata(cls)
-        : null;
+          ? this.extractModuleMetadata(cls)
+          : null;
 
         return {
           name: cls.getName(),
@@ -73,91 +74,104 @@ export class AstAnalyzerService {
 
     return result;
   }
-    private classifyNestRole(decorators: { name: string }[]) {
-        const names = decorators.map(d => d.name);
+  private classifyNestRole(decorators: { name: string }[]) {
+    const names = decorators.map(d => d.name);
 
-        if (names.includes('Controller')) return 'controller';
-        if (names.includes('Injectable')) return 'service';
-        if (names.includes('Module')) return 'module';
+    if (names.includes('Controller')) return 'controller';
+    if (names.includes('Injectable')) return 'service';
+    if (names.includes('Module')) return 'module';
 
-        return 'unknown';
-    }
+    return 'unknown';
+  }
 
-    private extractModuleMetadata(cls: any) {
-        const moduleDecorator = cls.getDecorator('Module');
-        if (!moduleDecorator) return null;
+  private extractModuleMetadata(cls: any) {
+    const moduleDecorator = cls.getDecorator('Module');
+    if (!moduleDecorator) return null;
 
-        const arg = moduleDecorator.getArguments()[0];
-        if (!arg) return null;
+    const arg = moduleDecorator.getArguments()[0];
+    if (!arg) return null;
 
-        const metadata: Record<string, string[]> = {};
+    const metadata: Record<string, string[]> = {};
 
-        //Node is the base AST type in ts-morph
-        arg.forEachChild((child:Node) => {
-            if (!Node.isPropertyAssignment(child)) return;
-            
-            const key = child.getName();
-            const value = child.getInitializer();
+    //Node is the base AST type in ts-morph
+    arg.forEachChild((child: Node) => {
+      if (!Node.isPropertyAssignment(child)) return;
 
-            if (!value) return;
+      const key = child.getName();
+      const value = child.getInitializer();
 
-            if (Node.isArrayLiteralExpression(value)) {
-                metadata[key] = value
-                            .getElements()
-                            .map(el => el.getText());
-            }
-        });
+      if (!value) return;
 
-        return metadata;
-    }
+      if (Node.isArrayLiteralExpression(value)) {
+        metadata[key] = value
+          .getElements()
+          .map(el => el.getText());
+      }
+    });
 
-    buildDependencyEdges(astResult: AstFileInfo[]) {
-    const edges: { from: string; to: string; type: string }[] = [];
+    return metadata;
+  }
+
+  buildDependencyEdges(astResult: AstFileInfo[]): GraphEdge[] {
+    const edges: GraphEdge[] = [];
 
     for (const file of astResult) {
-        for (const cls of file.classes) {
+      for (const cls of file.classes) {
 
         // 🔹 Constructor-based dependency injection
         cls.constructorParams?.forEach(param => {
-            edges.push({
+          edges.push({
             from: cls.name,
             to: param.type,
             type: 'constructor-injection',
-            });
+          });
         });
 
         // 🔹 NestJS module wiring
         if (cls.role === 'module' && cls.moduleMetadata) {
-            for (const [key, values] of Object.entries(cls.moduleMetadata)) {
+          for (const [key, values] of Object.entries(cls.moduleMetadata)) {
+            // Map module metadata keys to proper EdgeType values
+            let edgeType: EdgeType;
+            if (key === 'imports') {
+              edgeType = 'module-import';
+            } else if (key === 'providers') {
+              edgeType = 'module-provider';
+            } else if (key === 'controllers') {
+              edgeType = 'module-controller';
+            } else {
+              // Skip unknown module metadata keys
+              continue;
+            }
+
             values.forEach(value => {
-                edges.push({
+              edges.push({
                 from: cls.name,
                 to: value.replace(/[\[\]\s]/g, ''),
-                type: `module-${key}`,
-                });
+                type: edgeType,
+              });
             });
-            }
+          }
         }
-        }
+      }
     }
 
     return edges;
+  }
+
+  buildSemanticNodes(astResult: AstFileInfo[]) {
+    const nodes: { id: string; type: string }[] = [];
+
+    for (const file of astResult) {
+      for (const cls of file.classes) {
+        nodes.push({
+          id: cls.name,
+          type: cls.role, // controller | service | module | unknown
+        });
+      }
     }
 
-    buildSemanticNodes(astResult: AstFileInfo[]) {
-        const nodes: { id: string; type: string }[] = [];
-
-        for (const file of astResult) {
-            for (const cls of file.classes) {
-            nodes.push({
-                id: cls.name,
-                type: cls.role, // controller | service | module | unknown
-            });
-            }
-        }
-
-        return nodes;
-    }
+    return nodes;
+  }
 
 
 

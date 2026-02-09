@@ -1,0 +1,13 @@
+@startuml
+participant AnalyzeController
+participant AnalyzerService
+participant LanguageDetectorService
+participant StructuralAnalyzerService
+participant GithubScannerService
+participant LocalScannerService
+AnalyzeController -> AnalyzerService
+AnalyzerService -> LocalScannerService
+AnalyzerService -> GithubScannerService
+AnalyzerService -> LanguageDetectorService
+AnalyzerService -> StructuralAnalyzerService
+@enduml

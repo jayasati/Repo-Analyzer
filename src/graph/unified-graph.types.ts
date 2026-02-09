@@ -32,6 +32,6 @@ export interface UnifiedGraph {
 
 //This keeps structural analysis isolated and simple.
 export interface DependencyGraph {
-  nodes: { id: string; type: 'file' }[];
-  edges: { from: string; to: string }[];
+  nodes: GraphNode[];
+  edges: GraphEdge[];
 }
