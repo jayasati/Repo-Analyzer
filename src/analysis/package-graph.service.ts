@@ -20,6 +20,10 @@ export class PackageGraphService {
 
       if (!fromPackage || !toPackage) continue;
       if (fromPackage === toPackage) continue;
+        //  REMOVE ROOT / SYSTEM PATHS
+      if (fromPackage === "root" || toPackage === "root") {
+        continue;
+    }
 
       const key = `${fromPackage}->${toPackage}`;
 
@@ -36,7 +40,7 @@ export class PackageGraphService {
     return edges;
   }
 
-  private getPackage(filePath: string): string {
+    private getPackage(filePath: string): string {
 
     const normalized = filePath.replace(/\\/g, "/");
 
@@ -44,10 +48,15 @@ export class PackageGraphService {
 
     const srcIndex = parts.indexOf("src");
 
-    if (srcIndex === -1 || srcIndex + 1 >= parts.length) {
-      return parts[0];
+    if (srcIndex === -1) return "root";
+
+    const next = parts[srcIndex + 1];
+
+    // ignore files like app.module.ts
+    if (!next || next.includes(".")) {
+        return "root";
     }
 
-    return parts[srcIndex + 1];
-  }
+    return next;
+    }
 }
