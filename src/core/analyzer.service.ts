@@ -9,6 +9,7 @@ import { StructuralAnalyzerService } from '../structural/structural-analyzer.ser
 import { computeStructuralMetrics } from '../structural/structural-metrics';
 import { AnalysisResult } from './types/analysis-result.type';
 import * as fs from 'fs-extra';
+import { SemanticAnalyzerService } from '../semantic/semantic-analyzer.service';
 
 @Injectable()
 export class AnalyzerService{
@@ -17,6 +18,7 @@ export class AnalyzerService{
         private readonly githubScanner :GithubScannerService,
         private readonly detector :LanguageDetectorService,
         private readonly structuralAnalyzer :StructuralAnalyzerService,
+        private readonly semanticAnalyzer: SemanticAnalyzerService,
     ){}
 
     private extractProjectName(input: string): string {
@@ -31,10 +33,15 @@ export class AnalyzerService{
         source :'local' | 'github',
         identifier :string,
     ):AnalysisResult{
-
+        
         const detection=this.detector.detect(fileTree);
+        const primaryLanguage = detection.languages[0]?.name;
         const graph=this.structuralAnalyzer.analyze(fileTree);
         const metrics=computeStructuralMetrics(graph);
+
+        const semantic = primaryLanguage
+        ? this.semanticAnalyzer.analyze(primaryLanguage, process.cwd())
+        : { nodes: [], edges: [] };
 
         return {
             projectName:this.extractProjectName(identifier),
@@ -48,6 +55,7 @@ export class AnalyzerService{
                 graph,
                 metrics,
             },
+            semantic,
         };
     }
 

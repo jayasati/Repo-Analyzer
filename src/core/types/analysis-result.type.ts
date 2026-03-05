@@ -14,6 +14,11 @@ export interface AnalysisResult {
     metrics: Record<string, any>;
   };
 
+  semantic?: {
+    nodes: any[];
+    edges: any[];
+  };
+
   // placeholders for next weeks
   framework?: unknown;
   diagrams?: unknown;
