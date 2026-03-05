@@ -4,6 +4,7 @@ import { FileNode } from '../core/types/file-node.type';
 import { DependencyGraph } from '../graph/unified-graph.types';
 import { extractImports } from './import-extractor';
 import { GraphEdge } from '../graph/unified-graph.types';
+import { resolveImport } from './import-resolver';
 
 @Injectable()
 export class StructuralAnalyzerService {
@@ -17,6 +18,9 @@ export class StructuralAnalyzerService {
       nodes: Array.from(nodes.values()),
       edges,
     };
+  }
+  private normalizePath(p: string): string {
+    return p.replace(/\\/g, '/');
   }
 
   private walk(
@@ -35,8 +39,9 @@ export class StructuralAnalyzerService {
       return;
     }
 
-    nodes.set(node.path, {
-      id: node.path,
+    const normalized = this.normalizePath(node.path);
+    nodes.set(normalized, {
+      id: normalized,
       type: 'file',
     });
 
@@ -45,11 +50,21 @@ export class StructuralAnalyzerService {
       const imports = extractImports(content);
 
       imports.forEach(imp => {
+
+        const resolved = resolveImport(node.path, imp);
+
+        if (!resolved) return;
+
+        nodes.set(resolved, {
+          id: resolved,
+          type: 'file',
+        });
+
         edges.push({
-          from: node.path,
-          to: imp,
+          from: this.normalizePath(node.path),
+          to: this.normalizePath(resolved),
           type: 'import',
-        }as GraphEdge);
+        });
       });
     } catch {}
   }
