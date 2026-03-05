@@ -1,16 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import * as fs from 'fs-extra';
 import { FileNode } from '../core/types/file-node.type';
-import { DependencyGraph } from '../graph/unified-graph.types';
+import { DependencyGraph, GraphEdge } from '../graph/unified-graph.types';
 import { extractImports } from './import-extractor';
-import { GraphEdge } from '../graph/unified-graph.types';
 import { resolveImport } from './import-resolver';
 
 @Injectable()
 export class StructuralAnalyzerService {
+
+  // Cache to avoid repeated disk reads
+  private fileCache = new Map<string, string>();
+
   analyze(fileTree: FileNode): DependencyGraph {
+
     const nodes = new Map<string, any>();
     const edges: GraphEdge[] = [];
+
+    // clear cache for fresh analysis
+    this.fileCache.clear();
 
     this.walk(fileTree, nodes, edges);
 
@@ -19,15 +26,13 @@ export class StructuralAnalyzerService {
       edges,
     };
   }
-  private normalizePath(p: string): string {
-    return p.replace(/\\/g, '/');
-  }
 
   private walk(
     node: FileNode,
     nodes: Map<string, any>,
     edges: GraphEdge[],
   ) {
+
     if (node.type === 'folder') {
       node.children?.forEach(child =>
         this.walk(child, nodes, edges)
@@ -35,37 +40,80 @@ export class StructuralAnalyzerService {
       return;
     }
 
+    // Only analyze JS/TS files
     if (!node.path.endsWith('.ts') && !node.path.endsWith('.js')) {
       return;
     }
 
-    const normalized = this.normalizePath(node.path);
-    nodes.set(normalized, {
-      id: normalized,
+    const normalizedPath = this.normalizePath(node.path);
+
+    // Register file node
+    nodes.set(normalizedPath, {
+      id: normalizedPath,
       type: 'file',
     });
 
-    try {
-      const content = fs.readFileSync(node.path, 'utf-8');
-      const imports = extractImports(content);
+    const content = this.readFileCached(node.path);
 
-      imports.forEach(imp => {
+    if (!content) return;
 
-        const resolved = resolveImport(node.path, imp);
+    const imports = extractImports(content);
 
-        if (!resolved) return;
+    imports.forEach(imp => {
 
-        nodes.set(resolved, {
-          id: resolved,
-          type: 'file',
-        });
+      const resolved = resolveImport(node.path, imp);
 
-        edges.push({
-          from: this.normalizePath(node.path),
-          to: this.normalizePath(resolved),
-          type: 'import',
-        });
+      if (!resolved) return;
+
+      const normalizedResolved = this.normalizePath(resolved);
+
+      // ensure target node exists
+      nodes.set(normalizedResolved, {
+        id: normalizedResolved,
+        type: 'file',
       });
-    } catch {}
+
+      edges.push({
+        from: normalizedPath,
+        to: normalizedResolved,
+        type: 'import',
+      });
+
+    });
+
   }
+
+  /**
+   * Normalize paths to use forward slashes
+   * Prevents Windows/Linux duplication issues
+   */
+  private normalizePath(p: string): string {
+    return p.replace(/\\/g, '/');
+  }
+
+  /**
+   * Cached file reader to reduce disk I/O
+   */
+  private readFileCached(filePath: string): string | null {
+
+    if (this.fileCache.has(filePath)) {
+      return this.fileCache.get(filePath)!;
+    }
+
+    try {
+
+      const content = fs.readFileSync(filePath, 'utf-8');
+
+      this.fileCache.set(filePath, content);
+
+      return content;
+
+    } catch {
+
+      return null;
+
+    }
+
+  }
+
 }
