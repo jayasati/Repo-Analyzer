@@ -57,6 +57,19 @@ export class StructuralAnalyzerService {
 
     if (!content) return;
 
+    /**
+     * Fast pre-check to skip files with no imports
+     * Avoids running regex extraction unnecessarily
+     */
+    if (
+      !content.includes("import") &&
+      !content.includes("require") &&
+      !content.includes("#include") &&
+      !content.includes(" from ")
+    ) {
+      return;
+    }
+
     const imports = extractImports(content);
 
     imports.forEach(imp => {
