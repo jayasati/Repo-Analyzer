@@ -1,5 +1,5 @@
 import { GraphMergeService } from './graph-merge.service';
-import { SmellDewtectorService } from '../analysis/smell-detector.service';
+import { SmellDewtectorService } from '../analysis/smells/smell-detector.service';
 import { GraphEdge } from './unified-graph.types';
 
 const structural = {

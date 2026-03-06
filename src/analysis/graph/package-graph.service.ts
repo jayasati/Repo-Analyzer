@@ -1,5 +1,5 @@
 import * as path from "path";
-import { DependencyGraph } from "../graph/unified-graph.types";
+import { DependencyGraph } from "../../graph/unified-graph.types";
 
 export interface PackageEdge {
   from: string;

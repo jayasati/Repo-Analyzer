@@ -1,6 +1,6 @@
-import { LocalScannerService } from "../input/local/local-scanner.service";
-import { StructuralAnalyzerService } from "../structural/structural-analyzer.service";
-import { PackageGraphService } from "./package-graph.service";
+import { LocalScannerService } from "../../input/local/local-scanner.service";
+import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
+import { PackageGraphService } from "../graph/package-graph.service";
 import { CycleDetectorService } from "./cycle-detector.service";
 
 const scanner = new LocalScannerService();

@@ -1,7 +1,7 @@
-import { LocalScannerService } from "../input/local/local-scanner.service";
-import { StructuralAnalyzerService } from "../structural/structural-analyzer.service";
-import { PackageGraphService } from "./package-graph.service";
-import { CycleDetectorService } from "./cycle-detector.service";
+import { LocalScannerService } from "../../input/local/local-scanner.service";
+import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
+import { PackageGraphService } from "../graph/package-graph.service";
+import { CycleDetectorService } from "../cycles/cycle-detector.service";
 import { SmellDetectorService } from "./smell-detector.service";
 
 const scanner = new LocalScannerService();
