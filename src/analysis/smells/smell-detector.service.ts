@@ -54,6 +54,17 @@ export class SmellDetectorService {
 
     }
 
+    //entry Module
+    const entryModules = new Set<string>();
+
+    fanOut.forEach((count, module) => {
+      const incoming = fanIn.get(module) ?? 0;
+
+      if (incoming === 0 && count > 0) {
+        entryModules.add(module);
+      }
+    });
+
     // Dead Modules
     const allModules = new Set<string>();
 
@@ -68,11 +79,16 @@ export class SmellDetectorService {
 
     for (const module of allModules) {
 
-      if (!usedModules.has(module)) {
+      const incoming = fanIn.get(module) ?? 0;
+      const outgoing = fanOut.get(module) ?? 0;
+
+      const isEntry = entryModules.has(module);
+
+      if (incoming === 0 && outgoing === 0 && !isEntry) {
 
         smells.push({
           type: "dead-module",
-          message: `${module} is not used by any module`,
+          message: `${module} appears unused`,
           severity: "low",
           module
         });

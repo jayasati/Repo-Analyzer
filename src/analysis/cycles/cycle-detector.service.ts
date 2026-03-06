@@ -11,51 +11,94 @@ export class CycleDetectorService {
     // Build adjacency list
     for (const edge of edges) {
 
-      if (!graph.has(edge.from)) {
-        graph.set(edge.from, []);
-      }
+      if (!graph.has(edge.from)) graph.set(edge.from, []);
+      if (!graph.has(edge.to)) graph.set(edge.to, []);
 
       graph.get(edge.from)!.push(edge.to);
 
-      if (!graph.has(edge.to)) {
-        graph.set(edge.to, []);
-      }
     }
 
-    const visited = new Set<string>();
-    const stack = new Set<string>();
+    let index = 0;
+
+    const stack: string[] = [];
+    const indices = new Map<string, number>();
+    const lowlink = new Map<string, number>();
+    const onStack = new Set<string>();
+
     const cycles: Cycle[] = [];
 
-    const dfs = (node: string, path: string[]) => {
+    const strongConnect = (node: string) => {
 
-      if (stack.has(node)) {
-        const cycleStart = path.indexOf(node);
-        cycles.push({
-          nodes: path.slice(cycleStart),
-        });
-        return;
-      }
+      indices.set(node, index);
+      lowlink.set(node, index);
+      index++;
 
-      if (visited.has(node)) return;
-
-      visited.add(node);
-      stack.add(node);
+      stack.push(node);
+      onStack.add(node);
 
       const neighbors = graph.get(node) || [];
 
       for (const next of neighbors) {
-        dfs(next, [...path, next]);
+
+        if (!indices.has(next)) {
+
+          strongConnect(next);
+
+          lowlink.set(
+            node,
+            Math.min(
+              lowlink.get(node)!,
+              lowlink.get(next)!
+            )
+          );
+
+        }
+
+        else if (onStack.has(next)) {
+
+          lowlink.set(
+            node,
+            Math.min(
+              lowlink.get(node)!,
+              indices.get(next)!
+            )
+          );
+
+        }
+
       }
 
-      stack.delete(node);
+      if (lowlink.get(node) === indices.get(node)) {
+
+        const component: string[] = [];
+        let w: string;
+
+        do {
+
+          w = stack.pop()!;
+          onStack.delete(w);
+          component.push(w);
+
+        } while (w !== node);
+
+        if (component.length > 1) {
+          cycles.push({ nodes: component });
+        }
+
+      }
+
     };
 
     for (const node of graph.keys()) {
-      dfs(node, [node]);
+
+      if (!indices.has(node)) {
+        strongConnect(node);
+      }
+
     }
 
     return cycles;
-  }
-}
 
-//This uses DFS cycle detection.
+  }
+
+}
