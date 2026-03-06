@@ -1,19 +1,6 @@
-import { LocalScannerService } from "../../input/local/local-scanner.service";
-import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
-import { PackageGraphService } from "../graph/package-graph.service";
-import { CycleDetectorService } from "./cycle-detector.service";
+import { runAnalysis } from "../utils/run-analysis";
 
-const scanner = new LocalScannerService();
-const structural = new StructuralAnalyzerService();
-const packages = new PackageGraphService();
-const cycleDetector = new CycleDetectorService();
-
-const tree = scanner.scan(process.cwd());
-const graph = structural.analyze(tree);
-
-const packageEdges = packages.build(graph);
-
-const cycles = cycleDetector.detect(packageEdges);
+const { packageEdges, cycles } = runAnalysis();
 
 console.log("===== PACKAGE DEPENDENCIES =====");
 console.log(packageEdges);

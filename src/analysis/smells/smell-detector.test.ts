@@ -1,30 +1,12 @@
-import { LocalScannerService } from "../../input/local/local-scanner.service";
-import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
-import { PackageGraphService } from "../graph/package-graph.service";
-import { CycleDetectorService } from "../cycles/cycle-detector.service";
-import { SmellDetectorService } from "./smell-detector.service";
+import { runAnalysis } from "../utils/run-analysis";
 
-const scanner = new LocalScannerService();
-const structural = new StructuralAnalyzerService();
-const packages = new PackageGraphService();
-const cycles = new CycleDetectorService();
-const smells = new SmellDetectorService();
-
-const tree = scanner.scan(process.cwd());
-
-const graph = structural.analyze(tree);
-
-const packageEdges = packages.build(graph);
-
-const detectedCycles = cycles.detect(packageEdges);
-
-const detectedSmells = smells.detect(packageEdges);
+const { packageEdges, cycles, smells } = runAnalysis();
 
 console.log("===== PACKAGE DEPENDENCIES =====");
 console.log(packageEdges);
 
 console.log("\n===== CYCLES =====");
-console.log(detectedCycles);
+console.log(cycles);
 
 console.log("\n===== ARCHITECTURE SMELLS =====");
-console.log(detectedSmells);
+console.log(smells);
