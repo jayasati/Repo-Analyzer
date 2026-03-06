@@ -13,9 +13,9 @@ export class ArchitectureScoreService {
     const smellScore = this.computeSmellPenalty(smells);
 
     const overall =
-      modularity * 0.4 +
-      coupling * 0.3 +
-      smellScore * 0.3;
+      modularity * 0.35 +
+      coupling * 0.35 +
+      smellScore * 0.30;
 
     return {
       overall: Math.round(overall),
@@ -50,41 +50,46 @@ export class ArchitectureScoreService {
     return Math.max(score, 0);
   }
 
+
+    //new update --> This prevents one module from destroying the score unfairly.
   private computeCoupling(edges: { from: string; to: string }[]) {
 
     const fanOut = new Map<string, number>();
 
     edges.forEach(e => {
-
-      fanOut.set(
-        e.from,
-        (fanOut.get(e.from) ?? 0) + 1
-      );
-
+    fanOut.set(e.from, (fanOut.get(e.from) ?? 0) + 1);
     });
 
-    const maxFanOut = Math.max(...fanOut.values(), 0);
+    const values = Array.from(fanOut.values());
 
-    const score = 100 - Math.min(maxFanOut * 8, 100);
+    if (values.length === 0) return 100;
+
+    const avgFanOut =
+    values.reduce((a, b) => a + b, 0) / values.length;
+
+    const score = 100 - Math.min(avgFanOut * 12, 100);
 
     return Math.max(score, 0);
-  }
+    }
 
-  private computeSmellPenalty(smells: ArchitectureSmell[]) {
+    private computeSmellPenalty(smells: ArchitectureSmell[]) {
+
+    const penalties: Record<string, number> = {
+        "circular-dependency": 25,
+        "god-module": 20,
+        "hub-dependency": 15,
+        "dead-module": 5
+    };
 
     let penalty = 0;
 
     smells.forEach(smell => {
-
-      if (smell.severity === "high") penalty += 20;
-      if (smell.severity === "medium") penalty += 10;
-      if (smell.severity === "low") penalty += 5;
-
+        penalty += penalties[smell.type] ?? 10;
     });
 
     const score = 100 - penalty;
 
     return Math.max(score, 0);
-  }
+    }
 
 }
