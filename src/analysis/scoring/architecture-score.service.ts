@@ -1,8 +1,11 @@
 import { ArchitectureSmell } from "../smells/smell.types";
 import { ArchitectureScore } from "./architecture-score.types";
+import { ArchitectureMetricsService } from "../metrics/architecture-metrics.service";
+
+
 
 export class ArchitectureScoreService {
-
+    private metricsService = new ArchitectureMetricsService();
   compute(
     packageEdges: { from: string; to: string }[],
     smells: ArchitectureSmell[],
@@ -54,11 +57,7 @@ export class ArchitectureScoreService {
     //new update --> This prevents one module from destroying the score unfairly.
   private computeCoupling(edges: { from: string; to: string }[]) {
 
-    const fanOut = new Map<string, number>();
-
-    edges.forEach(e => {
-    fanOut.set(e.from, (fanOut.get(e.from) ?? 0) + 1);
-    });
+    const { fanOut } = this.metricsService.computeFanInOut(edges);
 
     const values = Array.from(fanOut.values());
 

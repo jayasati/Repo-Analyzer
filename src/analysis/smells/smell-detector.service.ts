@@ -1,26 +1,14 @@
 import { ArchitectureSmell } from "./smell.types";
+import { ArchitectureMetricsService } from "../metrics/architecture-metrics.service";
 
+const metricsService = new ArchitectureMetricsService();
 export class SmellDetectorService {
 
   detect(packageEdges: { from: string; to: string }[]) {
 
     const smells: ArchitectureSmell[] = [];
 
-    const fanOut = new Map<string, number>();
-    const fanIn = new Map<string, number>();
-
-    for (const edge of packageEdges) {
-
-      fanOut.set(
-        edge.from,
-        (fanOut.get(edge.from) ?? 0) + 1
-      );
-
-      fanIn.set(
-        edge.to,
-        (fanIn.get(edge.to) ?? 0) + 1
-      );
-    }
+    const { fanIn, fanOut } =metricsService.computeFanInOut(packageEdges);
 
     // God Module (high fan-out)
     for (const [module, count] of fanOut.entries()) {

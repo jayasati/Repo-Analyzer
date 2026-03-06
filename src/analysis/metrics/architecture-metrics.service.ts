@@ -2,62 +2,69 @@ import { ArchitectureMetrics } from "./architecture-metrics.types";
 
 export class ArchitectureMetricsService {
 
-  compute(
-    modules: string[],
-    edges: { from: string; to: string }[],
-    cycles: { nodes: string[] }[]
-  ): ArchitectureMetrics {
+    //improving modularity by introducing this fan-in/fan-out module(Reusable)
+    computeFanInOut(edges: { from: string; to: string }[]) {
 
     const fanIn = new Map<string, number>();
     const fanOut = new Map<string, number>();
 
     for (const edge of edges) {
 
-      fanOut.set(
+        fanOut.set(
         edge.from,
         (fanOut.get(edge.from) ?? 0) + 1
-      );
+        );
 
-      fanIn.set(
+        fanIn.set(
         edge.to,
         (fanIn.get(edge.to) ?? 0) + 1
-      );
+        );
 
     }
 
-    const avgFanIn =
-      Array.from(fanIn.values()).reduce((a, b) => a + b, 0) /
-      (fanIn.size || 1);
+    return { fanIn, fanOut };
+    }
 
-    const avgFanOut =
-      Array.from(fanOut.values()).reduce((a, b) => a + b, 0) /
-      (fanOut.size || 1);
+    compute(
+        modules: string[],
+        edges: { from: string; to: string }[],
+        cycles: { nodes: string[] }[]
+    ): ArchitectureMetrics {
 
-    const moduleCount = modules.length;
-    const dependencyCount = edges.length;
+        const { fanIn, fanOut } = this.computeFanInOut(edges);
 
-    const maxPossibleDependencies =
-      moduleCount * (moduleCount - 1);
+        const avgFanIn =
+        Array.from(fanIn.values()).reduce((a, b) => a + b, 0) /
+        (fanIn.size || 1);
 
-    const dependencyDensity =
-      dependencyCount / (maxPossibleDependencies || 1);
+        const avgFanOut =
+        Array.from(fanOut.values()).reduce((a, b) => a + b, 0) /
+        (fanOut.size || 1);
 
-    return {
+        const moduleCount = modules.length;
+        const dependencyCount = edges.length;
 
-      moduleCount,
+        const maxPossibleDependencies =
+        moduleCount * (moduleCount - 1);
 
-      dependencyCount,
+        const dependencyDensity =
+        dependencyCount / (maxPossibleDependencies || 1);
 
-      cycleCount: cycles.length,
+        return {
 
-      averageFanIn: Number(avgFanIn.toFixed(2)),
+        moduleCount,
 
-      averageFanOut: Number(avgFanOut.toFixed(2)),
+        dependencyCount,
 
-      dependencyDensity: Number(dependencyDensity.toFixed(3)),
+        cycleCount: cycles.length,
 
-    };
+        averageFanIn: Number(avgFanIn.toFixed(2)),
 
-  }
+        averageFanOut: Number(avgFanOut.toFixed(2)),
+
+        dependencyDensity: Number(dependencyDensity.toFixed(3)),
+        };
+
+    }
 
 }
