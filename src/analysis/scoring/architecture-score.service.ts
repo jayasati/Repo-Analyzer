@@ -4,13 +4,17 @@ import { ArchitectureMetricsService } from "../metrics/architecture-metrics.serv
 import { ArchitectureMetrics } from "../metrics/architecture-metrics.types";
 
 export class ArchitectureScoreService {
-    private metricsService = new ArchitectureMetricsService();
+
+  private metricsService = new ArchitectureMetricsService();
+
   compute(
     packageEdges: { from: string; to: string }[],
     smells: ArchitectureSmell[],
+    cycles: { nodes: string[] }[]
   ): ArchitectureScore {
 
-    const metrics = this.metricsService.compute(packageEdges, [])
+    const metrics = this.metricsService.compute(packageEdges, cycles);
+
     const modularity = this.computeModularity(metrics);
     const coupling = this.computeCoupling(metrics);
     const smellScore = this.computeSmellPenalty(smells);
@@ -22,54 +26,52 @@ export class ArchitectureScoreService {
 
     return {
       overall: Math.round(overall),
-
       breakdown: {
         modularity: Math.round(modularity),
         coupling: Math.round(coupling),
         smells: Math.round(smellScore),
       }
     };
-
   }
 
-    private computeModularity(metrics: ArchitectureMetrics) {
-        const score =100 - Math.min(metrics.dependencyDensity * 200, 100);
-        return Math.max(score, 0);
-    }
+  private computeModularity(metrics: ArchitectureMetrics) {
 
+    const score =
+      100 - Math.min(metrics.dependencyDensity * 200, 100);
 
-    //new update --> This prevents one module from destroying the score unfairly.
-    private computeCoupling(metrics: ArchitectureMetrics) {
+    return Math.max(score, 0);
+  }
 
-        const avgFanOut = metrics.averageFanOut;
-        const maxFanOut = metrics.maxFanOut;
+  private computeCoupling(metrics: ArchitectureMetrics) {
 
-        const avgScore =100 - Math.min(avgFanOut * 12, 100);
-        const hotspotPenalty =Math.min(maxFanOut * 4, 40);
+    const avgFanOut = metrics.averageFanOut;
+    const maxFanOut = metrics.maxFanOut;
 
-        const score = avgScore - hotspotPenalty;
+    const avgScore =
+      100 - Math.min(avgFanOut * 12, 100);
 
-        return Math.max(score, 0);
-    }
+    const hotspotPenalty =
+      Math.min(maxFanOut * 4, 40);
 
-    private computeSmellPenalty(smells: ArchitectureSmell[]) {
+    const score = avgScore - hotspotPenalty;
 
-        const penalties: Record<string, number> = {
-            "circular-dependency": 25,
-            "god-module": 20,
-            "hub-dependency": 15,
-            "dead-module": 5
-        };
+    return Math.max(score, 0);
+  }
 
-        let penalty = 0;
+  private computeSmellPenalty(smells: ArchitectureSmell[]) {
 
-        smells.forEach(smell => {
-            penalty += penalties[smell.type] ?? 10;
-        });
+    const penalties: Record<string, number> = {
+      "circular-dependency": 25,
+      "god-module": 20,
+      "hub-dependency": 15,
+      "dead-module": 5
+    };
 
-        const score = 100 - penalty;
+    const penalty = smells.reduce(
+      (sum, smell) => sum + (penalties[smell.type] ?? 10),
+      0
+    );
 
-        return Math.max(score, 0);
-    }
-
+    return Math.max(100 - penalty, 0);
+  }
 }

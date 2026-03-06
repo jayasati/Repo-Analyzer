@@ -10,7 +10,7 @@ const reportService = new ArchitectureReportService();
 const recommendationService = new RecommendationService();
 
 
-const score = scoring.compute(packageEdges, smells);
+const score = scoring.compute(packageEdges, smells,cycles);
 
 const modules = Array.from(
   new Set(packageEdges.flatMap(e => [e.from, e.to]))

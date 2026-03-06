@@ -9,7 +9,7 @@ const scoring = new ArchitectureScoreService();
 
 
 
-const score = scoring.compute(packageEdges, smells);
+const score = scoring.compute(packageEdges, smells,cycles);
 
 console.log("===== ARCHITECTURE SCORE =====");
 console.log(score);
