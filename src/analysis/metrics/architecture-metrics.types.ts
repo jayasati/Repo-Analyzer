@@ -12,4 +12,6 @@ export interface ArchitectureMetrics {
 
   dependencyDensity: number;
 
+  maxFanOut: number;
+
 }

@@ -40,8 +40,15 @@ export class ArchitectureScoreService {
 
     //new update --> This prevents one module from destroying the score unfairly.
     private computeCoupling(metrics: ArchitectureMetrics) {
+
         const avgFanOut = metrics.averageFanOut;
-        const score =100 - Math.min(avgFanOut * 12, 100);
+        const maxFanOut = metrics.maxFanOut;
+
+        const avgScore =100 - Math.min(avgFanOut * 12, 100);
+        const hotspotPenalty =Math.min(maxFanOut * 4, 40);
+
+        const score = avgScore - hotspotPenalty;
+
         return Math.max(score, 0);
     }
 

@@ -37,6 +37,8 @@ export class ArchitectureMetricsService {
 
         const avgFanOut =Array.from(fanOut.values()).reduce((a, b) => a + b, 0) /(fanOut.size || 1);
 
+        const maxFanOut =Math.max(...Array.from(fanOut.values()), 0);
+
         const modules = extractModules(edges);
         const moduleCount = modules.length;
         const dependencyCount = edges.length;
@@ -49,17 +51,19 @@ export class ArchitectureMetricsService {
 
         return {
 
-        moduleCount,
+            moduleCount,
 
-        dependencyCount,
+            dependencyCount,
 
-        cycleCount: cycles.length,
+            cycleCount: cycles.length,
 
-        averageFanIn: Number(avgFanIn.toFixed(2)),
+            averageFanIn: Number(avgFanIn.toFixed(2)),
 
-        averageFanOut: Number(avgFanOut.toFixed(2)),
+            averageFanOut: Number(avgFanOut.toFixed(2)),
 
-        dependencyDensity: Number(dependencyDensity.toFixed(3)),
+            dependencyDensity: Number(dependencyDensity.toFixed(3)),
+
+            maxFanOut,
         };
 
     }
