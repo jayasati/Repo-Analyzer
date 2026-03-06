@@ -32,26 +32,31 @@ export class ArchitectureScoreService {
 
   }
 
-  private computeModularity(edges: { from: string; to: string }[]) {
+    private computeModularity(edges: { from: string; to: string }[]) {
 
-    const modules = new Set<string>();
+        const modules = new Set<string>();
 
-    edges.forEach(e => {
-      modules.add(e.from);
-      modules.add(e.to);
-    });
+        edges.forEach(e => {
+            modules.add(e.from);
+            modules.add(e.to);
+        });
 
-    const moduleCount = modules.size;
-    const dependencyCount = edges.length;
+        const moduleCount = modules.size;
+        const dependencyCount = edges.length;
 
-    if (moduleCount === 0) return 100;
+        if (moduleCount <= 1) return 0;
 
-    const ratio = dependencyCount / moduleCount;
+        const maxPossibleDependencies =
+            moduleCount * (moduleCount - 1);
 
-    const score = 100 - Math.min(ratio * 10, 100);
+        const density =
+            dependencyCount / maxPossibleDependencies;
 
-    return Math.max(score, 0);
-  }
+        const score =
+            100 - Math.min(density * 200, 100);
+
+        return Math.max(score, 0);
+    }
 
 
     //new update --> This prevents one module from destroying the score unfairly.
