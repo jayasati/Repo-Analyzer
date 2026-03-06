@@ -1,46 +1,43 @@
 import { ArchitectureMetrics } from "./architecture-metrics.types";
+import { extractModules } from "../utils/module-utils";
 
 export class ArchitectureMetricsService {
 
     //improving modularity by introducing this fan-in/fan-out module(Reusable)
     computeFanInOut(edges: { from: string; to: string }[]) {
 
-    const fanIn = new Map<string, number>();
-    const fanOut = new Map<string, number>();
+        const fanIn = new Map<string, number>();
+        const fanOut = new Map<string, number>();
 
-    for (const edge of edges) {
+        for (const edge of edges) {
 
-        fanOut.set(
-        edge.from,
-        (fanOut.get(edge.from) ?? 0) + 1
-        );
+            fanOut.set(
+            edge.from,
+            (fanOut.get(edge.from) ?? 0) + 1
+            );
 
-        fanIn.set(
-        edge.to,
-        (fanIn.get(edge.to) ?? 0) + 1
-        );
+            fanIn.set(
+            edge.to,
+            (fanIn.get(edge.to) ?? 0) + 1
+            );
 
-    }
+        }
 
-    return { fanIn, fanOut };
+        return { fanIn, fanOut };
     }
 
     compute(
-        modules: string[],
         edges: { from: string; to: string }[],
         cycles: { nodes: string[] }[]
     ): ArchitectureMetrics {
 
         const { fanIn, fanOut } = this.computeFanInOut(edges);
 
-        const avgFanIn =
-        Array.from(fanIn.values()).reduce((a, b) => a + b, 0) /
-        (fanIn.size || 1);
+        const avgFanIn =Array.from(fanIn.values()).reduce((a, b) => a + b, 0) /(fanIn.size || 1);
 
-        const avgFanOut =
-        Array.from(fanOut.values()).reduce((a, b) => a + b, 0) /
-        (fanOut.size || 1);
+        const avgFanOut =Array.from(fanOut.values()).reduce((a, b) => a + b, 0) /(fanOut.size || 1);
 
+        const modules = extractModules(edges);
         const moduleCount = modules.length;
         const dependencyCount = edges.length;
 

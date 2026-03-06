@@ -10,7 +10,6 @@ const modules = Array.from(
 );
 
 const metrics = metricsService.compute(
-  modules,
   packageEdges,
   cycles
 );
