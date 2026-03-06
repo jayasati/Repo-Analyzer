@@ -54,6 +54,16 @@ export class ArchitectureReportService {
       lines.push(`- ${c.nodes.join(" → ")}`)
     );
 
+    lines.push("");
+    lines.push("Recommendations:");
+
+    if (report.recommendations.length === 0)
+    lines.push("None");
+
+    report.recommendations.forEach(r =>
+    lines.push(`- ${r.message}`)
+    );
+
     return lines.join("\n");
   }
 

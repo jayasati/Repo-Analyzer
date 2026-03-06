@@ -5,6 +5,8 @@ import { CycleDetectorService } from "../cycles/cycle-detector.service";
 import { SmellDetectorService } from "../smells/smell-detector.service";
 import { ArchitectureScoreService } from "../scoring/architecture-score.service";
 import { ArchitectureReportService } from "./architecture-report.service";
+import { RecommendationService } from "./recommend/recommendation.service"; 
+
 
 const scanner = new LocalScannerService();
 const structural = new StructuralAnalyzerService();
@@ -13,6 +15,7 @@ const cycleDetector = new CycleDetectorService();
 const smellDetector = new SmellDetectorService();
 const scoring = new ArchitectureScoreService();
 const reportService = new ArchitectureReportService();
+const recommendationService = new RecommendationService();
 
 const tree = scanner.scan(process.cwd());
 
@@ -30,12 +33,19 @@ const modules = Array.from(
   new Set(packageEdges.flatMap(e => [e.from, e.to]))
 );
 
+const recommendations = recommendationService.generate(
+  smells,
+  cycles,
+  score.overall
+);
+
 const report = reportService.generate({
   projectName: "repo-analyzer",
   modules,
   score,
   smells,
-  cycles
+  cycles,
+  recommendations
 });
 
 console.log("===== CLI REPORT =====");
