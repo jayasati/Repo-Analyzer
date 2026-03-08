@@ -19,6 +19,7 @@ import { DiagramPrepService } from "../../diagram/diagram-prep.service";
 import { PlantUmlRendererService } from "../../diagram/plantuml-renderer.service";
 
 import { PipelineResult } from "./pipeline-result.type";
+import { RepoSummaryService } from "../../analysis/insights/repo-summary.service";
 
 @Injectable()
 export class AnalysisPipelineService {
@@ -98,6 +99,17 @@ export class AnalysisPipelineService {
       cycles
     );
 
+    const summaryService = new RepoSummaryService();
+
+    const summary = summaryService.generate(
+    path.split(/[\\/]/).pop() || "unknown",
+    detection,
+    unifiedGraph,
+    smells,
+    cycles,
+    score
+    );
+
     // 11. Diagrams
     const diagramPrep = new DiagramPrepService();
     const renderer = new PlantUmlRendererService();
@@ -116,6 +128,8 @@ export class AnalysisPipelineService {
     return {
 
       projectName: path.split(/[\\/]/).pop() || "unknown",
+
+      summary,
 
       detection,
 

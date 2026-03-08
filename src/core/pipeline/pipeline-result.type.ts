@@ -3,9 +3,12 @@ import { UnifiedGraph } from "../../graph/unified-graph.types";
 import { ArchitectureScore } from "../../analysis/scoring/architecture-score.types";
 import { ArchitectureSmell } from "../../analysis/smells/smell.types";
 import { ArchitectureMetrics } from "../../analysis/metrics/architecture-metrics.types";
+import { RepoSummary } from "../../analysis/insights/repo-summary.types";
 
 export interface PipelineResult {
   projectName: string;
+
+  summary: RepoSummary;
 
   detection: DetectionResult;
 
