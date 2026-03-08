@@ -4,6 +4,7 @@ import { ArchitectureScore } from "../../analysis/scoring/architecture-score.typ
 import { ArchitectureSmell } from "../../analysis/smells/smell.types";
 import { ArchitectureMetrics } from "../../analysis/metrics/architecture-metrics.types";
 import { RepoSummary } from "../../analysis/insights/repo-summary.types";
+import { Hotspot } from "../../analysis/insights/hotspot.types";
 
 export interface PipelineResult {
   projectName: string;
@@ -19,6 +20,8 @@ export interface PipelineResult {
   smells: ArchitectureSmell[];
 
   cycles: { nodes: string[] }[];
+
+  hotspots: Hotspot[];
 
   score: ArchitectureScore;
 

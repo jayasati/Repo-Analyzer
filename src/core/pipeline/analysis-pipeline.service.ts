@@ -21,6 +21,8 @@ import { PlantUmlRendererService } from "../../diagram/plantuml-renderer.service
 import { PipelineResult } from "./pipeline-result.type";
 import { RepoSummaryService } from "../../analysis/insights/repo-summary.service";
 
+import { HotspotDetectorService } from "../../analysis/insights/hotspot-detector.service";
+
 @Injectable()
 export class AnalysisPipelineService {
 
@@ -125,6 +127,11 @@ export class AnalysisPipelineService {
       ? diagramPrep.forSequenceDiagram(unifiedGraph, entryController)
       : null;
 
+    //hotspot
+    const hotspotDetector = new HotspotDetectorService();
+
+    const hotspots = hotspotDetector.detect(packageEdges);
+
     return {
 
       projectName: path.split(/[\\/]/).pop() || "unknown",
@@ -140,6 +147,8 @@ export class AnalysisPipelineService {
       smells,
 
       cycles,
+
+      hotspots,
 
       score,
 

@@ -19,3 +19,6 @@ const pipeline = new AnalysisPipelineService(
 const result = pipeline.run(process.cwd());
 
 console.log(JSON.stringify(result.summary, null, 2));
+
+console.log("HOTSPOTS");
+console.log(result.hotspots);
