@@ -22,3 +22,6 @@ console.log(JSON.stringify(result.summary, null, 2));
 
 console.log("HOTSPOTS");
 console.log(result.hotspots);
+
+console.log("IMPACT ANALYSIS");
+console.log(result.impact);

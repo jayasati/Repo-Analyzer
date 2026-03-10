@@ -7,6 +7,8 @@ import { LocalScannerService } from '../input/local/local-scanner.service';
 import { GithubScannerService } from '../input/github/github-scanner.service';
 import { LanguageDetectorService } from '../detection/language-detector.service';
 import { StructuralAnalyzerService } from '../structural/structural-analyzer.service';
+import { SemanticAnalyzerService } from 'src/semantic/semantic-analyzer.service';
+import { TypescriptAnalyzer } from '../semantic/analyzers/typescript-analyzer';
 
 const program = new Command();
 
@@ -25,6 +27,9 @@ program
       new GithubScannerService(),
       new LanguageDetectorService(),
       new StructuralAnalyzerService(),
+      new SemanticAnalyzerService([
+        new TypescriptAnalyzer()
+      ]),
     );
 
     const result =

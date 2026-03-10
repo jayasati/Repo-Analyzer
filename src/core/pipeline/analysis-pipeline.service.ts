@@ -23,6 +23,8 @@ import { RepoSummaryService } from "../../analysis/insights/repo-summary.service
 
 import { HotspotDetectorService } from "../../analysis/insights/hotspot-detector.service";
 
+import { ImpactAnalyzerService } from "../../analysis/impact/impact-analyzer.service";
+
 @Injectable()
 export class AnalysisPipelineService {
 
@@ -69,10 +71,7 @@ export class AnalysisPipelineService {
     );
 
     // 6. Package edges
-    const packageEdges = structuralGraph.edges.map(e => ({
-      from: e.from,
-      to: e.to
-    }));
+    const packageEdges = structuralGraph.edges;
 
     // 7. Cycle detection
     const cycleDetector = new CycleDetectorService();
@@ -132,6 +131,16 @@ export class AnalysisPipelineService {
 
     const hotspots = hotspotDetector.detect(packageEdges);
 
+    //impact analyser
+    const impactAnalyzer = new ImpactAnalyzerService();
+
+    // Example: analyze impact of the largest hotspot
+    const target = hotspots[0]?.module;
+
+    const impact = target
+      ? impactAnalyzer.analyze(packageEdges, target)
+      : undefined;
+
     return {
 
       projectName: path.split(/[\\/]/).pop() || "unknown",
@@ -149,6 +158,8 @@ export class AnalysisPipelineService {
       cycles,
 
       hotspots,
+
+      impact,
 
       score,
 
