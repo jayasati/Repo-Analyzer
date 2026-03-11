@@ -25,3 +25,6 @@ console.log(result.hotspots);
 
 console.log("IMPACT ANALYSIS");
 console.log(result.impact);
+
+console.log("ARCHITECTURE HEALTH");
+console.log(result.health);

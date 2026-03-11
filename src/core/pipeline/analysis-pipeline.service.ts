@@ -25,6 +25,8 @@ import { HotspotDetectorService } from "../../analysis/insights/hotspot-detector
 
 import { ImpactAnalyzerService } from "../../analysis/impact/impact-analyzer.service";
 
+import { ArchitectureHealthService } from "../../analysis/reports/architecture-health.service";
+
 @Injectable()
 export class AnalysisPipelineService {
 
@@ -141,11 +143,21 @@ export class AnalysisPipelineService {
       ? impactAnalyzer.analyze(packageEdges, target)
       : undefined;
 
+    //HEALTH
+    const healthService = new ArchitectureHealthService();
+
+    const health = healthService.generate(
+      score,
+      smells
+    );
+
     return {
 
       projectName: path.split(/[\\/]/).pop() || "unknown",
 
       summary,
+
+      health,
 
       detection,
 

@@ -6,6 +6,7 @@ import { ArchitectureMetrics } from "../../analysis/metrics/architecture-metrics
 import { RepoSummary } from "../../analysis/insights/repo-summary.types";
 import { Hotspot } from "../../analysis/insights/hotspot.types";
 import { ImpactResult } from "../../analysis/impact/impact.types";
+import { ArchitectureHealth } from "../../analysis/reports/architecture-health.types";
 
 export interface PipelineResult {
   projectName: string;
@@ -27,6 +28,8 @@ export interface PipelineResult {
   impact?: ImpactResult;
 
   score: ArchitectureScore;
+
+  health: ArchitectureHealth;
 
   diagrams?: {
     classDiagram?: string;
