@@ -1,41 +1,35 @@
 /// <reference path="../types/tree-sitter-languages.d.ts" />
+
 import Parser from "tree-sitter";
-import TypeScript from "tree-sitter-typescript";
-import Python from "tree-sitter-python";
-import Java from "tree-sitter-java";
-import Go from "tree-sitter-go";
+
+import { LanguageRegistry } from "./language-registry.service";
+import { registerLanguages } from "./register-languages";
 
 export class TreeSitterParserService {
 
   private parser: Parser;
+  private registry: LanguageRegistry;
 
   constructor() {
+
     this.parser = new Parser();
+
+    this.registry = new LanguageRegistry();
+
+    registerLanguages(this.registry);
+
   }
 
   setLanguage(language: string) {
 
-    if (language === "TypeScript" || language === "JavaScript") {
-      this.parser.setLanguage(TypeScript.typescript);
-      return;
+    const grammar = this.registry.get(language);
+
+    if (!grammar) {
+      throw new Error(`Unsupported language: ${language}`);
     }
 
-    if (language === "Python") {
-      this.parser.setLanguage(Python);
-      return;
-    }
+    this.parser.setLanguage(grammar);
 
-    if (language === "Java") {
-      this.parser.setLanguage(Java);
-      return;
-    }
-
-    if (language === "Go") {
-      this.parser.setLanguage(Go);
-      return;
-    }
-
-    throw new Error(`Unsupported language: ${language}`);
   }
 
   parse(code: string) {
