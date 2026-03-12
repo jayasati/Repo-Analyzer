@@ -1,5 +1,10 @@
 import { StructuralAnalyzerService } from '../structural/structural-analyzer.service';
-import { AstAnalyzerService } from '../ast/ast-analyzer.service';
+
+import { SemanticAnalyzerService } from '../semantic/semantic-analyzer.service';
+import { TreeSitterAnalyzer } from '../semantic/analyzers/tree-sitter-analyzer';
+
+import { LanguageDetectorService } from '../detection/language-detector.service';
+
 import { GraphMergeService } from '../graph/graph-merge.service';
 import { DiagramPrepService } from './diagram-prep.service';
 import { PlantUmlRendererService } from './plantuml-renderer.service';
@@ -13,29 +18,49 @@ async function run() {
 
   console.log('📁 Analyzing repo:', repoPath);
 
-  // 1️⃣ Scan filesystem
+  //  Scan filesystem
   const localScanner = new LocalScannerService();
   const fileTree = await localScanner.scan(repoPath);
 
+  //language detection
+  const detector = new LanguageDetectorService();
+  const detection = detector.detect(fileTree);
 
-  // 1️⃣ Structural graph (files + imports)
+  const language = detection.languages[0]?.name;
+
+//  Structural graph (files + imports)
   const structuralAnalyzer = new StructuralAnalyzerService();
   const structuralGraph = structuralAnalyzer.analyze(fileTree);
 
-  // 2️⃣ AST semantic graph
-  const astAnalyzer = new AstAnalyzerService();
-  const astResult = astAnalyzer.analyze();
+  // Semantic analysis
+  const semanticAnalyzer = new SemanticAnalyzerService([
+    new TreeSitterAnalyzer()
+  ]);
 
-  const semanticNodes = astAnalyzer.buildSemanticNodes(astResult);
-  const semanticEdges = astAnalyzer.buildDependencyEdges(astResult);
+  const semanticResult = language
+    ? semanticAnalyzer.analyze(language, repoPath)
+    : { nodes: [], edges: [] };
 
-  // 3️⃣ Merge graphs
+  const semanticNodes = semanticResult.nodes.map(n => ({
+    id: n.id,
+    type: n.type === "class" ? "class" : "unknown",
+  }));
+
+  const semanticEdges = semanticResult.edges;
+
+
+  // Merge graphs
   const merger = new GraphMergeService();
+
   const unified = merger.merge(structuralGraph, {
     nodes: semanticNodes,
-    edges: semanticEdges,
+    edges: semanticEdges.map(e => ({
+      from: e.from,
+      to: e.to,
+      type: "import" as const
+    })),
   });
-
+  
   // 4️⃣ Prepare diagrams
   const prep = new DiagramPrepService();
   const renderer = new PlantUmlRendererService();
