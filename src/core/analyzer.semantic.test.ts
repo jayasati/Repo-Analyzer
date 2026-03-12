@@ -4,14 +4,13 @@ import { GithubScannerService } from '../input/github/github-scanner.service';
 import { LanguageDetectorService } from '../detection/language-detector.service';
 import { StructuralAnalyzerService } from '../structural/structural-analyzer.service';
 import { SemanticAnalyzerService } from '../semantic/semantic-analyzer.service';
-import { TypescriptAnalyzer } from '../semantic/analyzers/typescript-analyzer';
-
+import { TreeSitterAnalyzer } from '../semantic/analyzers/tree-sitter-analyzer';
 const analyzer = new AnalyzerService(
   new LocalScannerService(),
   new GithubScannerService(),
   new LanguageDetectorService(),
   new StructuralAnalyzerService(),
-  new SemanticAnalyzerService([new TypescriptAnalyzer()])
+  new SemanticAnalyzerService([new TreeSitterAnalyzer()])
 );
 
 (async () => {

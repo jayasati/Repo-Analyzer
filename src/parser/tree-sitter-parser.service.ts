@@ -22,7 +22,7 @@ export class TreeSitterParserService {
 
   setLanguage(language: string) {
 
-    const grammar = this.registry.get(language);
+    const grammar = this.registry.get(language.toLowerCase());
 
     if (!grammar) {
       throw new Error(`Unsupported language: ${language}`);
