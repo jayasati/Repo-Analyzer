@@ -1,3 +1,4 @@
+/// <reference path="../types/tree-sitter-languages.d.ts" />
 import Parser from "tree-sitter";
 import TypeScript from "tree-sitter-typescript";
 import Python from "tree-sitter-python";
