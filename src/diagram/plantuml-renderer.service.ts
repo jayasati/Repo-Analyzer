@@ -1,5 +1,4 @@
 import { DiagramGraph } from './diagram-prep.service';
-import { GraphNode, GraphEdge } from '../graph/unified-graph.types';
 
 export class PlantUmlRendererService {
   renderClassDiagram(graph: DiagramGraph): string {

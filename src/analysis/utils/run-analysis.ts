@@ -6,7 +6,6 @@ import { SmellDetectorService } from "../smells/smell-detector.service";
 import { ArchitectureMetricsService } from "../metrics/architecture-metrics.service";
 
 export function runAnalysis() {
-
   const scanner = new LocalScannerService();
   const structural = new StructuralAnalyzerService();
   const packageGraph = new PackageGraphService();
@@ -18,13 +17,11 @@ export function runAnalysis() {
 
   const graph = structural.analyze(tree);
 
+  // Build package-level edges — this is what all analysis should operate on
   const packageEdges = packageGraph.build(graph);
 
   const cycles = cycleDetector.detect(packageEdges);
-
   const smells = smellDetector.detect(packageEdges);
-
-  // NEW: compute architecture metrics
   const metrics = metricsService.compute(packageEdges, cycles);
 
   return {
@@ -33,6 +30,6 @@ export function runAnalysis() {
     packageEdges,
     cycles,
     smells,
-    metrics
+    metrics,
   };
 }

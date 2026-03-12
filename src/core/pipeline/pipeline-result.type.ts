@@ -7,30 +7,23 @@ import { RepoSummary } from "../../analysis/insights/repo-summary.types";
 import { Hotspot } from "../../analysis/insights/hotspot.types";
 import { ImpactResult } from "../../analysis/impact/impact.types";
 import { ArchitectureHealth } from "../../analysis/reports/architecture-health.types";
+import { ConfidenceResult } from "../../analysis/confidence/confidence.types";
+import { BaselineComparison } from "../../analysis/baseline/baseline.types";
 
 export interface PipelineResult {
   projectName: string;
-
   summary: RepoSummary;
-
-  detection: DetectionResult;
-
-  unifiedGraph: UnifiedGraph;
-
-  metrics: ArchitectureMetrics;
-
-  smells: ArchitectureSmell[];
-
-  cycles: { nodes: string[] }[];
-
-  hotspots: Hotspot[];
-
-  impact?: ImpactResult;
-
-  score: ArchitectureScore;
-
   health: ArchitectureHealth;
-
+  confidence: ConfidenceResult;
+  baseline: BaselineComparison[];
+  detection: DetectionResult;
+  unifiedGraph: UnifiedGraph;
+  metrics: ArchitectureMetrics;
+  smells: ArchitectureSmell[];
+  cycles: { nodes: string[] }[];
+  hotspots: Hotspot[];
+  impact?: ImpactResult;
+  score: ArchitectureScore;
   diagrams?: {
     classDiagram?: string;
     componentDiagram?: string;
