@@ -1,0 +1,11 @@
+1. MULTIPLE LANGUAGE DETECTOR 
+
+npm install tree-sitter
+npm install tree-sitter-typescript
+npm install tree-sitter-python
+npm install tree-sitter-java
+npm install tree-sitter-go
+npm install tree-sitter-rust
+
+
+------------------------------
