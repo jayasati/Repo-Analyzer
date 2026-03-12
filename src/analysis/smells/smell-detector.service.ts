@@ -1,6 +1,9 @@
 import { ArchitectureSmell } from "./smell.types";
 import { computeGraphStats } from "../utils/graph-stats";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class SmellDetectorService {
 
   detect(packageEdges: { from: string; to: string }[]) {

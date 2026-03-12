@@ -1,7 +1,11 @@
+
+import { Injectable } from '@nestjs/common';
+
 export interface Cycle {
   nodes: string[];
 }
 
+@Injectable()
 export class CycleDetectorService {
 
   detect(edges: { from: string; to: string }[]): Cycle[] {

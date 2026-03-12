@@ -5,6 +5,9 @@ import { UnifiedGraph } from "../../graph/unified-graph.types";
 import { ArchitectureScore } from "../scoring/architecture-score.types";
 import { ArchitectureSmell } from "../smells/smell.types";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class RepoSummaryService {
 
   generate(

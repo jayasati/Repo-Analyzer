@@ -1,8 +1,11 @@
 import { UnifiedGraph, GraphNode, GraphEdge } from './unified-graph.types';
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class GraphMergeService {
   merge(
-    structural: { nodes: any[]; edges: GraphEdge[] },
+    structural: { nodes: { id: string; type: string }[]; edges: GraphEdge[] },
     semantic: {
       nodes: { id: string; type: string }[];
       edges: GraphEdge[];

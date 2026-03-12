@@ -3,6 +3,9 @@ import { ArchitectureScore } from "./architecture-score.types";
 import { ArchitectureMetricsService } from "../metrics/architecture-metrics.service";
 import { ArchitectureMetrics } from "../metrics/architecture-metrics.types";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class ArchitectureScoreService {
 
   private metricsService = new ArchitectureMetricsService();

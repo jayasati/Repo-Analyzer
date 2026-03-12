@@ -1,10 +1,13 @@
 import { UnifiedGraph, GraphEdge, GraphNode } from '../graph/unified-graph.types';
 
+import { Injectable } from '@nestjs/common';
+
 export interface DiagramGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
 }
 
+@Injectable()
 export class DiagramPrepService {
 
   // ========================
@@ -94,12 +97,15 @@ forComponentDiagram(graph: UnifiedGraph): DiagramGraph {
 
     walk(this.normalizeId(entryPoint), 0);
 
+    const seenIds = new Set<string>();
     const nodes = graph.nodes
       .filter(n => visited.has(this.normalizeId(n.id)))
-      .map(n => ({
-        ...n,
-        id: this.normalizeId(n.id),
-      }));
+      .map(n => ({ ...n, id: this.normalizeId(n.id) }))
+      .filter(n => {
+        if (seenIds.has(n.id)) return false;
+        seenIds.add(n.id);
+        return true;
+      });
 
     return { nodes, edges: resultEdges };
   }

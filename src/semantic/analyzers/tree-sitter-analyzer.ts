@@ -3,6 +3,8 @@ import * as path from 'path';
 import { SemanticAnalyzer, SemanticResult } from '../interfaces/semantic-analyzer.interface';
 import { TreeSitterParserService } from '../../parser/tree-sitter-parser.service';
 import { DEFAULT_IGNORED_FOLDERS } from '../../shared/constants/ignore-folders';
+import { Injectable } from '@nestjs/common';
+
 
 const EXT_TO_LANGUAGE: Record<string, string> = {
   '.ts': 'typescript',
@@ -22,6 +24,8 @@ const PRIMITIVES = new Set([
   'int', 'float', 'double', 'char', 'byte', 'long', 'short',
 ]);
 
+
+@Injectable()
 export class TreeSitterAnalyzer implements SemanticAnalyzer {
 
   private readonly parser = new TreeSitterParserService();

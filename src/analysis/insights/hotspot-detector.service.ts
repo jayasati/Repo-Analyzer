@@ -1,6 +1,9 @@
 import { Hotspot } from "./hotspot.types";
 import { computeGraphStats } from "../utils/graph-stats";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class HotspotDetectorService {
 
   detect(edges: { from: string; to: string }[]): Hotspot[] {

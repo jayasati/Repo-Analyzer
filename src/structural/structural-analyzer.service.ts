@@ -19,7 +19,7 @@ const SUPPORTED_EXTENSIONS = new Set([
 ]);
 
 // Test file patterns — excluded to prevent false dependency cycles
-const TEST_PATTERNS = [
+const TEST_PATTERNS : ReadonlyArray<(name: string) => boolean> =[
   (name: string) => name.includes('.test.'),   // file.test.ts / .js / .py
   (name: string) => name.includes('.spec.'),   // file.spec.ts (Jest/Jasmine)
   (name: string) => name.includes('_test.'),   // file_test.go

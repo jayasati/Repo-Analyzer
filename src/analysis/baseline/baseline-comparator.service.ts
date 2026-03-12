@@ -2,6 +2,9 @@ import { ArchitectureMetrics } from "../metrics/architecture-metrics.types";
 import { BASELINES } from "./baseline-dataset";
 import { BaselineComparison } from "./baseline.types";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class BaselineComparatorService {
 
   compare(metrics: ArchitectureMetrics): BaselineComparison[] {

@@ -20,31 +20,32 @@ import { ConfidenceService } from "../../analysis/confidence/confidence.service"
 import { BaselineComparatorService } from "../../analysis/baseline/baseline-comparator.service";
 import { PipelineResult } from "./pipeline-result.type";
 
+
+
+// AFTER (all injected, no manual instantiation):
 @Injectable()
 export class AnalysisPipelineService {
 
-  // These are pure-function services with no state — safe to instantiate once
-  private readonly packageGraph = new PackageGraphService();
-  private readonly cycleDetector = new CycleDetectorService();
-  private readonly smellDetector = new SmellDetectorService();
-  private readonly metricsService = new ArchitectureMetricsService();
-  private readonly scoreService = new ArchitectureScoreService();
-  private readonly summaryService = new RepoSummaryService();
-  private readonly diagramPrep = new DiagramPrepService();
-  private readonly renderer = new PlantUmlRendererService();
-  private readonly hotspotDetector = new HotspotDetectorService();
-  private readonly impactAnalyzer = new ImpactAnalyzerService();
-  private readonly healthService = new ArchitectureHealthService();
-  private readonly confidenceService = new ConfidenceService();
-  private readonly baselineComparator = new BaselineComparatorService();
-  private readonly merger = new GraphMergeService();
-
   constructor(
-    private readonly scanner: LocalScannerService,
-    private readonly detector: LanguageDetectorService,
-    private readonly structuralAnalyzer: StructuralAnalyzerService,
-    private readonly semanticAnalyzer: SemanticAnalyzerService,
-  ) {}
+      private readonly scanner: LocalScannerService,
+      private readonly detector: LanguageDetectorService,
+      private readonly structuralAnalyzer: StructuralAnalyzerService,
+      private readonly semanticAnalyzer: SemanticAnalyzerService,
+      private readonly packageGraph: PackageGraphService,
+      private readonly cycleDetector: CycleDetectorService,
+      private readonly smellDetector: SmellDetectorService,
+      private readonly metricsService: ArchitectureMetricsService,
+      private readonly scoreService: ArchitectureScoreService,
+      private readonly summaryService: RepoSummaryService,
+      private readonly diagramPrep: DiagramPrepService,
+      private readonly renderer: PlantUmlRendererService,
+      private readonly hotspotDetector: HotspotDetectorService,
+      private readonly impactAnalyzer: ImpactAnalyzerService,
+      private readonly healthService: ArchitectureHealthService,
+      private readonly confidenceService: ConfidenceService,
+      private readonly baselineComparator: BaselineComparatorService,
+      private readonly merger: GraphMergeService,
+    ) {}
 
   run(path: string): PipelineResult {
 

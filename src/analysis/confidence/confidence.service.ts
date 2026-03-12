@@ -2,6 +2,9 @@ import { ArchitectureMetrics } from "../metrics/architecture-metrics.types";
 import { ArchitectureSmell } from "../smells/smell.types";
 import { ConfidenceResult } from "./confidence.types";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class ConfidenceService {
 
   compute(
@@ -10,13 +13,13 @@ export class ConfidenceService {
     cycles: { nodes: string[] }[]
   ): ConfidenceResult {
 
-    const repoSize = this.computeRepoSizeFactor(metrics);
+    const repoSizeFactor = this.computeRepoSizeFactor(metrics);
     const cyclePenalty = this.computeCyclePenalty(cycles);
     const smellPenalty = this.computeSmellPenalty(smells);
     const stability = this.computeStability(metrics);
 
     const score =
-      repoSize *
+      repoSizeFactor *
       stability *
       (1 - cyclePenalty) *
       (1 - smellPenalty);
@@ -24,7 +27,7 @@ export class ConfidenceService {
     return {
       score: Number(score.toFixed(2)),
       factors: {
-        repoSize,
+        repoSizeFactor,
         cyclePenalty,
         smellPenalty,
         stability

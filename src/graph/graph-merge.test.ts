@@ -3,8 +3,12 @@ import { SmellDetectorService } from '../analysis/smells/smell-detector.service'
 import { PackageGraphService } from '../analysis/graph/package-graph.service';
 import { GraphEdge } from './unified-graph.types';
 
+// AFTER
 const structural = {
-  nodes: [{ id: 'fileA' }, { id: 'fileB' }],
+  nodes: [
+    { id: 'fileA', type: 'file' },
+    { id: 'fileB', type: 'file' },
+  ],
   edges: [] as GraphEdge[],
 };
 

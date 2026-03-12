@@ -1,11 +1,13 @@
-import * as path from "path";
+
 import { DependencyGraph } from "../../graph/unified-graph.types";
+import { Injectable } from '@nestjs/common';
 
 export interface PackageEdge {
   from: string;
   to: string;
 }
 
+@Injectable()
 export class PackageGraphService {
 
   build(graph: DependencyGraph) {

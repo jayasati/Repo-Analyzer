@@ -1,5 +1,8 @@
 import { ImpactResult } from "./impact.types";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class ImpactAnalyzerService {
 
   analyze(
