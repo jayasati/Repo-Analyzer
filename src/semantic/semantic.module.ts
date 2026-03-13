@@ -1,12 +1,18 @@
+// AFTER: src/semantic/semantic.module.ts
 import { Module } from '@nestjs/common';
 import { SemanticAnalyzerService } from './semantic-analyzer.service';
+import { TreeSitterAnalyzer } from './analyzers/tree-sitter-analyzer';
 
 @Module({
   providers: [
-    SemanticAnalyzerService
+    TreeSitterAnalyzer,
+    {
+      provide: SemanticAnalyzerService,
+      useFactory: (analyzer: TreeSitterAnalyzer) =>
+        new SemanticAnalyzerService([analyzer]),
+      inject: [TreeSitterAnalyzer],
+    },
   ],
-  exports: [
-    SemanticAnalyzerService
-  ]
+  exports: [SemanticAnalyzerService],
 })
 export class SemanticModule {}

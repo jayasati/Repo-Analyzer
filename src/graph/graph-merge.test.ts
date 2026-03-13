@@ -1,10 +1,15 @@
 import { GraphMergeService } from './graph-merge.service';
-import { SmellDewtectorService } from '../analysis/smells/smell-detector.service';
+import { SmellDetectorService } from '../analysis/smells/smell-detector.service';
+import { PackageGraphService } from '../analysis/graph/package-graph.service';
 import { GraphEdge } from './unified-graph.types';
 
+// AFTER
 const structural = {
-  nodes: [{ id: 'fileA' }, { id: 'fileB' }],
-  edges: [],
+  nodes: [
+    { id: 'fileA', type: 'file' },
+    { id: 'fileB', type: 'file' },
+  ],
+  edges: [] as GraphEdge[],
 };
 
 const semantic: {
@@ -24,11 +29,14 @@ const semantic: {
   ],
 };
 
-
 const merger = new GraphMergeService();
 const unified = merger.merge(structural, semantic);
 
-const smellDetector = new SmellDewtectorService();
-const smells = smellDetector.detect(unified);
+// SmellDetectorService expects package-level edges, not a UnifiedGraph
+const packageGraph = new PackageGraphService();
+const packageEdges = packageGraph.build(unified);
 
-console.log(JSON.stringify({ unified, smells }, null, 2));
+const smellDetector = new SmellDetectorService();
+const smells = smellDetector.detect(packageEdges);
+
+console.log(JSON.stringify({ unified, packageEdges, smells }, null, 2));

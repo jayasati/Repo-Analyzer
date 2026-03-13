@@ -1,23 +1,22 @@
-import { GraphEdge } from "../../graph/unified-graph.types";
 import { ImpactResult } from "./impact.types";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class ImpactAnalyzerService {
 
   analyze(
-    edges: GraphEdge[],
+    edges: { from: string; to: string }[],
     target: string
   ): ImpactResult {
 
     const reverseGraph = new Map<string, string[]>();
 
     edges.forEach(edge => {
-
       if (!reverseGraph.has(edge.to)) {
         reverseGraph.set(edge.to, []);
       }
-
       reverseGraph.get(edge.to)!.push(edge.from);
-
     });
 
     const visited = new Set<string>();
@@ -25,28 +24,18 @@ export class ImpactAnalyzerService {
     const affected: string[] = [];
 
     while (stack.length) {
-
       const node = stack.pop()!;
-
       const dependents = reverseGraph.get(node) || [];
 
       dependents.forEach(dep => {
-
         if (!visited.has(dep)) {
           visited.add(dep);
           affected.push(dep);
           stack.push(dep);
         }
-
       });
-
     }
 
-    return {
-      target,
-      affected
-    };
-
+    return { target, affected };
   }
-
 }

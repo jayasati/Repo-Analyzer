@@ -1,6 +1,8 @@
 import { DiagramGraph } from './diagram-prep.service';
-import { GraphNode, GraphEdge } from '../graph/unified-graph.types';
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class PlantUmlRendererService {
   renderClassDiagram(graph: DiagramGraph): string {
     const lines: string[] = ['@startuml'];

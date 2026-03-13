@@ -11,20 +11,15 @@ export class AnalyzeController {
       throw new BadRequestException('source is required');
     }
 
-
-    try{
-      return body.source.startsWith('http')
-      ?await this.analyzer.analyzeGitHub(body.source)
+  // AFTER
+  try {
+    return body.source.startsWith('http')
+      ? await this.analyzer.analyzeGitHub(body.source)
       : await this.analyzer.analyzeLocal(body.source);
-    }catch(err:any){
-      throw new InternalServerErrorException(
-        err?.message || 'Analysis Failed',
-      );
-    }
-    // if (body.source.startsWith('http')) {
-    //   return this.analyzer.analyzeGitHub(body.source);
-    // }
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Analysis failed';
+    throw new InternalServerErrorException(message);
+  }
 
-    // return this.analyzer.analyzeLocal(body.source);
   }
 }

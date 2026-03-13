@@ -1,7 +1,7 @@
 export interface ConfidenceResult {
   score: number;
   factors: {
-    repoSize: number;
+    repoSizeFactor: number;
     cyclePenalty: number;
     smellPenalty: number;
     stability: number;

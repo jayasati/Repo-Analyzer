@@ -1,6 +1,9 @@
 import { ArchitectureMetrics } from "./architecture-metrics.types";
 import { computeGraphStats } from "../utils/graph-stats";
 
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
 export class ArchitectureMetricsService {
 
   compute(

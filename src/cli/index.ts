@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import { NestFactory } from '@nestjs/core';
 
+import { AppModule } from '../app.module';
 import { AnalyzerService } from '../core/analyzer.service';
-import { LocalScannerService } from '../input/local/local-scanner.service';
-import { GithubScannerService } from '../input/github/github-scanner.service';
-import { LanguageDetectorService } from '../detection/language-detector.service';
-import { StructuralAnalyzerService } from '../structural/structural-analyzer.service';
-import { SemanticAnalyzerService } from 'src/semantic/semantic-analyzer.service';
-import { TypescriptAnalyzer } from '../semantic/analyzers/typescript-analyzer';
 
 const program = new Command();
 
@@ -22,15 +18,10 @@ program
   .argument('<source>', 'Local path or GitHub repository URL')
   .option('--pretty', 'Pretty-print output')
   .action(async (source, options) => {
-    const analyzer = new AnalyzerService(
-      new LocalScannerService(),
-      new GithubScannerService(),
-      new LanguageDetectorService(),
-      new StructuralAnalyzerService(),
-      new SemanticAnalyzerService([
-        new TypescriptAnalyzer()
-      ]),
-    );
+
+    const app = await NestFactory.createApplicationContext(AppModule);
+
+    const analyzer = app.get(AnalyzerService);
 
     const result =
       source.startsWith('http')
@@ -42,6 +33,8 @@ program
         ? JSON.stringify(result, null, 2)
         : JSON.stringify(result),
     );
+
+    await app.close();
   });
 
 program.parse();

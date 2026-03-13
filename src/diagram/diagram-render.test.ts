@@ -1,30 +1,49 @@
 import { DiagramPrepService } from './diagram-prep.service';
 import { PlantUmlRendererService } from './plantuml-renderer.service';
+import { LocalScannerService } from '../input/local/local-scanner.service';
+import { StructuralAnalyzerService } from '../structural/structural-analyzer.service';
+import { SemanticAnalyzerService } from '../semantic/semantic-analyzer.service';
+import { TreeSitterAnalyzer } from '../semantic/analyzers/tree-sitter-analyzer';
+import { GraphMergeService } from '../graph/graph-merge.service';
+import { LanguageDetectorService } from '../detection/language-detector.service';
 
-const graph = {
-  nodes: [
-    { id: 'ApiModule', type: 'module', source: 'semantic' },
-    { id: 'AnalyzeController', type: 'controller', source: 'semantic' },
-    { id: 'AnalyzerService', type: 'service', source: 'semantic' },
-  ],
-  edges: [
-    { from: 'ApiModule', to: 'AnalyzeController', type: 'module-controller' },
-    { from: 'AnalyzeController', to: 'AnalyzerService', type: 'constructor-injection' },
-  ],
-};
-
+const scanner = new LocalScannerService();
+const detector = new LanguageDetectorService();
+const structural = new StructuralAnalyzerService();
+const semantic = new SemanticAnalyzerService([new TreeSitterAnalyzer()]);
+const merger = new GraphMergeService();
 const prep = new DiagramPrepService();
 const renderer = new PlantUmlRendererService();
 
-const classGraph = prep.forClassDiagram(graph as any);
-const componentGraph = prep.forComponentDiagram(graph as any);
-const sequenceGraph = prep.forSequenceDiagram(graph as any, 'AnalyzeController');
+const tree = scanner.scan(process.cwd());
+const detection = detector.detect(tree);
+const structuralGraph = structural.analyze(tree);
 
-console.log('CLASS DIAGRAM\n');
-console.log(renderer.renderClassDiagram(classGraph));
+const language = detection.languages[0]?.name;
+const semanticRaw = language ? semantic.analyze(language, process.cwd()) : { nodes: [], edges: [] };
+const semanticGraph = {
+  nodes: semanticRaw.nodes,
+  edges: semanticRaw.edges.map(e => ({
+    from: e.from, to: e.to, type: 'constructor-injection' as const,
+  })),
+};
 
-console.log('\nCOMPONENT DIAGRAM\n');
-console.log(renderer.renderComponentDiagram(componentGraph));
+const unified = merger.merge(structuralGraph, semanticGraph);
 
-console.log('\nSEQUENCE DIAGRAM\n');
-console.log(renderer.renderSequenceDiagram(sequenceGraph));
+const classDiagram    = prep.forClassDiagram(unified);
+const componentDiagram = prep.forComponentDiagram(unified);
+const entryController = unified.nodes.find(n => n.type === 'controller')?.id;
+const sequenceDiagram = entryController
+  ? prep.forSequenceDiagram(unified, entryController)
+  : null;
+
+console.log('===== CLASS DIAGRAM =====');
+console.log(renderer.renderClassDiagram(classDiagram));
+
+console.log('\n===== COMPONENT DIAGRAM =====');
+console.log(renderer.renderComponentDiagram(componentDiagram));
+
+if (sequenceDiagram) {
+  console.log('\n===== SEQUENCE DIAGRAM =====');
+  console.log(renderer.renderSequenceDiagram(sequenceDiagram));
+}
