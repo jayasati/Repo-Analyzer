@@ -1,16 +1,16 @@
-// Analysis Orchestrator Service (CORE)
-
 import { Injectable } from '@nestjs/common';
-import { GithubScannerService } from '../input/github/github-scanner.service';
 import * as fs from 'fs-extra';
-import { AnalysisPipelineService } from "./pipeline/analysis-pipeline.service";
-import { PipelineResult } from "./pipeline/pipeline-result.type";
+
+import { GithubScannerService }    from '../input/github/github-scanner.service';
+import { AnalysisPipelineService } from './pipeline/analysis-pipeline.service';
+import { PipelineResult }          from './pipeline/pipeline-result.type';
 
 @Injectable()
 export class AnalyzerService {
+
   constructor(
-    private readonly pipeline: AnalysisPipelineService,
-    private readonly githubScanner: GithubScannerService
+    private readonly pipeline:       AnalysisPipelineService,
+    private readonly githubScanner:  GithubScannerService,
   ) {}
 
   async analyzeLocal(path: string): Promise<PipelineResult> {
@@ -23,7 +23,10 @@ export class AnalyzerService {
     try {
       return this.pipeline.run(tempPath);
     } finally {
-      await fs.remove(tempPath);
+      // Swallow cleanup errors so they never mask the original analysis error.
+      await fs.remove(tempPath).catch(err =>
+        console.warn(`[AnalyzerService] Failed to remove temp dir "${tempPath}":`, err),
+      );
     }
   }
 }

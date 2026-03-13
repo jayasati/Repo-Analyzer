@@ -1,155 +1,173 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Inject } from '@nestjs/common';
 
-import { LocalScannerService } from "../../input/local/local-scanner.service";
-import { LanguageDetectorService } from "../../detection/language-detector.service";
-import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
-import { SemanticAnalyzerService } from "../../semantic/semantic-analyzer.service";
-import { GraphMergeService } from "../../graph/graph-merge.service";
-import { PackageGraphService } from "../../analysis/graph/package-graph.service";
-import { CycleDetectorService } from "../../analysis/cycles/cycle-detector.service";
-import { SmellDetectorService } from "../../analysis/smells/smell-detector.service";
-import { ArchitectureMetricsService } from "../../analysis/metrics/architecture-metrics.service";
-import { ArchitectureScoreService } from "../../analysis/scoring/architecture-score.service";
-import { DiagramPrepService } from "../../diagram/diagram-prep.service";
-import { PlantUmlRendererService } from "../../diagram/plantuml-renderer.service";
-import { RepoSummaryService } from "../../analysis/insights/repo-summary.service";
-import { HotspotDetectorService } from "../../analysis/insights/hotspot-detector.service";
-import { ImpactAnalyzerService } from "../../analysis/impact/impact-analyzer.service";
-import { ArchitectureHealthService } from "../../analysis/reports/architecture-health.service";
-import { ConfidenceService } from "../../analysis/confidence/confidence.service";
-import { BaselineComparatorService } from "../../analysis/baseline/baseline-comparator.service";
-import { PipelineResult } from "./pipeline-result.type";
+import { FileNode }          from '../../shared/types/file-node.type';
+import { DetectionResult }   from '../../detection/detection-result.type';
+import { UnifiedGraph }      from '../../graph/unified-graph.types';
+import { PackageEdge }       from '../../analysis/graph/package-graph.service';
 
+import { PIPELINE_SCANNERS, PIPELINE_ANALYZERS, PIPELINE_RENDERERS } from './pipeline.tokens';
+import type { PipelineScanners }  from './pipeline-scanners.types';
+import type { PipelineAnalyzers } from './pipeline-analyzers.types';
+import type { PipelineRenderers } from './pipeline-renderers.types';
+import { AnalysisPhaseResult } from './analysis-phase-result.type';
+import { PipelineResult }    from './pipeline-result.type';
 
-
-// AFTER (all injected, no manual instantiation):
 @Injectable()
 export class AnalysisPipelineService {
 
   constructor(
-      private readonly scanner: LocalScannerService,
-      private readonly detector: LanguageDetectorService,
-      private readonly structuralAnalyzer: StructuralAnalyzerService,
-      private readonly semanticAnalyzer: SemanticAnalyzerService,
-      private readonly packageGraph: PackageGraphService,
-      private readonly cycleDetector: CycleDetectorService,
-      private readonly smellDetector: SmellDetectorService,
-      private readonly metricsService: ArchitectureMetricsService,
-      private readonly scoreService: ArchitectureScoreService,
-      private readonly summaryService: RepoSummaryService,
-      private readonly diagramPrep: DiagramPrepService,
-      private readonly renderer: PlantUmlRendererService,
-      private readonly hotspotDetector: HotspotDetectorService,
-      private readonly impactAnalyzer: ImpactAnalyzerService,
-      private readonly healthService: ArchitectureHealthService,
-      private readonly confidenceService: ConfidenceService,
-      private readonly baselineComparator: BaselineComparatorService,
-      private readonly merger: GraphMergeService,
-    ) {}
+    @Inject(PIPELINE_SCANNERS)   private readonly scan:    PipelineScanners,
+    @Inject(PIPELINE_ANALYZERS)  private readonly analyze: PipelineAnalyzers,
+    @Inject(PIPELINE_RENDERERS)  private readonly render:  PipelineRenderers,
+  ) {}
+
+  // ─── Public entry point ──────────────────────────────────────────────────
 
   run(path: string): PipelineResult {
+    const { fileTree, detection }         = this.runScanPhase(path);
+    const { unifiedGraph, packageEdges }  = this.runGraphPhase(fileTree, detection, path);
+    const analysis                        = this.runAnalysisPhase(packageEdges);
+    const summary                         = this.runSummaryPhase(path, detection, unifiedGraph, analysis);
+    const diagrams                        = this.runDiagramPhase(unifiedGraph);
 
-    // 1. Scan repository
-    const fileTree = this.scanner.scan(path);
+    return this.assemblePipelineResult(path, summary, diagrams, unifiedGraph, analysis, detection);
+  }
 
-    // 2. Detect language + framework
-    const detection = this.detector.detect(fileTree);
+  // ─── Phase 1: Scan ───────────────────────────────────────────────────────
 
-    // 3. Structural analysis (file-level graph)
-    const structuralGraph = this.structuralAnalyzer.analyze(fileTree);
+  private runScanPhase(path: string): { fileTree: FileNode; detection: DetectionResult } {
+    const fileTree  = this.scan.scanner.scan(path);
+    const detection = this.scan.detector.detect(fileTree);
+    return { fileTree, detection };
+  }
 
-    // 4. Semantic analysis
-    const language = detection.languages[0]?.name;
+  // ─── Phase 2: Build graphs ───────────────────────────────────────────────
 
+  private runGraphPhase(
+    fileTree:  FileNode,
+    detection: DetectionResult,
+    path:      string,
+  ): { unifiedGraph: UnifiedGraph; packageEdges: PackageEdge[] } {
+    const structuralGraph = this.scan.structuralAnalyzer.analyze(fileTree);
+
+    const language    = detection.languages[0]?.name;
     const semanticRaw = language
-      ? this.semanticAnalyzer.analyze(language, path)
+      ? this.scan.semanticAnalyzer.analyze(language, path)
       : { nodes: [], edges: [] };
 
-    const semantic = {
+    const semanticGraph = {
       nodes: semanticRaw.nodes,
       edges: semanticRaw.edges.map(e => ({
         from: e.from,
-        to: e.to,
-        type: "constructor-injection" as const,
+        to:   e.to,
+        type: 'constructor-injection' as const,
       })),
     };
 
-    // 5. Merge structural + semantic into unified graph
-    const unifiedGraph = this.merger.merge(structuralGraph, semantic);
+    const unifiedGraph = this.scan.merger.merge(structuralGraph, semanticGraph);
 
-    // 6. Build package-level edges (e.g. "core" -> "input", not full file paths)
-    //    This is the correct input for all architecture analysis below
-    const packageEdges = this.packageGraph.build(structuralGraph);
+    // Package-level edges are built from the structural graph only, which keeps
+    // the architectural analysis independent of semantic noise.
+    const packageEdges = this.scan.packageGraph.build(structuralGraph);
 
-    // 7. Cycle detection on package edges
-    const cycles = this.cycleDetector.detect(packageEdges);
+    return { unifiedGraph, packageEdges };
+  }
 
-    // 8. Smell detection on package edges
-    const smells = this.smellDetector.detect(packageEdges);
+  // ─── Phase 3: Architecture analysis ─────────────────────────────────────
 
-    // 9. Architecture metrics
-    const metrics = this.metricsService.compute(packageEdges, cycles);
+  private runAnalysisPhase(packageEdges: PackageEdge[]): AnalysisPhaseResult {
+    const cycles  = this.analyze.cycleDetector.detect(packageEdges);
+    const smells  = this.analyze.smellDetector.detect(packageEdges);
+    const metrics = this.analyze.metricsService.compute(packageEdges, cycles);
+    const score   = this.analyze.scoreService.compute(packageEdges, smells, cycles);
 
-    // 10. Architecture score
-    const score = this.scoreService.compute(packageEdges, smells, cycles);
+    const confidence = this.analyze.confidenceService.compute(metrics, smells, cycles);
+    const baseline   = this.analyze.baselineComparator.compare(metrics);
+    const hotspots   = this.analyze.hotspotDetector.detect(packageEdges);
 
-    // 11. Confidence score (how reliable is our analysis)
-    const confidence = this.confidenceService.compute(metrics, smells, cycles);
-
-    // 12. Baseline comparison (what type of project does this resemble)
-    const baseline = this.baselineComparator.compare(metrics);
-
-    // 13. Repo summary
-    const summary = this.summaryService.generate(
-      path.split(/[\\/]/).pop() || "unknown",
-      detection,
-      unifiedGraph,
-      smells,
-      cycles,
-      score,
-    );
-
-    // 14. Diagrams
-    const classGraph = this.diagramPrep.forClassDiagram(unifiedGraph);
-    const componentGraph = this.diagramPrep.forComponentDiagram(unifiedGraph);
-    const entryController = unifiedGraph.nodes.find(n => n.type === "controller")?.id;
-    const sequenceGraph = entryController
-      ? this.diagramPrep.forSequenceDiagram(unifiedGraph, entryController)
-      : null;
-
-    // 15. Hotspots
-    const hotspots = this.hotspotDetector.detect(packageEdges);
-
-    // 16. Impact analysis — target the highest-risk hotspot
     const hotspotTarget = hotspots[0]?.module;
     const impact = hotspotTarget
-      ? this.impactAnalyzer.analyze(packageEdges, hotspotTarget)
+      ? this.analyze.impactAnalyzer.analyze(packageEdges, hotspotTarget)
       : undefined;
 
-    // 17. Health report
-    const health = this.healthService.generate(score, smells);
+    return { cycles, smells, metrics, score, confidence, baseline, hotspots, impact };
+  }
 
-    return {
-      projectName: path.split(/[\\/]/).pop() || "unknown",
-      summary,
-      health,
-      confidence,
-      baseline,
+  // ─── Phase 4: Summary & health report ───────────────────────────────────
+
+  private runSummaryPhase(
+    path:        string,
+    detection:   DetectionResult,
+    unifiedGraph: UnifiedGraph,
+    analysis:    AnalysisPhaseResult,
+  ) {
+    const projectName = this.extractProjectName(path);
+
+    const summary = this.analyze.summaryService.generate(
+      projectName,
       detection,
       unifiedGraph,
-      metrics,
-      smells,
-      cycles,
-      hotspots,
-      impact,
-      score,
-      diagrams: {
-        classDiagram: this.renderer.renderClassDiagram(classGraph),
-        componentDiagram: this.renderer.renderComponentDiagram(componentGraph),
-        sequenceDiagram: sequenceGraph
-          ? this.renderer.renderSequenceDiagram(sequenceGraph)
-          : undefined,
-      },
+      analysis.smells,
+      analysis.cycles,
+      analysis.score,
+    );
+
+    const health = this.analyze.healthService.generate(analysis.score, analysis.smells);
+
+    return { summary, health };
+  }
+
+  // ─── Phase 5: Diagrams ───────────────────────────────────────────────────
+
+  private runDiagramPhase(unifiedGraph: UnifiedGraph): PipelineResult['diagrams'] {
+    const classGraph     = this.render.diagramPrep.forClassDiagram(unifiedGraph);
+    const componentGraph = this.render.diagramPrep.forComponentDiagram(unifiedGraph);
+
+    const entryController = unifiedGraph.nodes.find(n => n.type === 'controller')?.id;
+    const sequenceGraph   = entryController
+      ? this.render.diagramPrep.forSequenceDiagram(unifiedGraph, entryController)
+      : null;
+
+    return {
+      classDiagram:     this.render.renderer.renderClassDiagram(classGraph),
+      componentDiagram: this.render.renderer.renderComponentDiagram(componentGraph),
+      sequenceDiagram:  sequenceGraph
+        ? this.render.renderer.renderSequenceDiagram(sequenceGraph)
+        : undefined,
     };
+  }
+
+  // ─── Assembly ────────────────────────────────────────────────────────────
+
+  private assemblePipelineResult(
+    path:         string,
+    reportPhase:  ReturnType<typeof this.runSummaryPhase>,
+    diagrams:     PipelineResult['diagrams'],
+    unifiedGraph: UnifiedGraph,
+    analysis:     AnalysisPhaseResult,
+    detection:    DetectionResult,
+  ): PipelineResult {
+    return {
+      projectName:  this.extractProjectName(path),
+      summary:      reportPhase.summary,
+      health:       reportPhase.health,
+      confidence:   analysis.confidence,
+      baseline:     analysis.baseline,
+      detection,
+      unifiedGraph,
+      metrics:      analysis.metrics,
+      smells:       analysis.smells,
+      cycles:       analysis.cycles,
+      hotspots:     analysis.hotspots,
+      impact:       analysis.impact,
+      score:        analysis.score,
+      diagrams,
+    };
+  }
+
+  // ─── Helpers ─────────────────────────────────────────────────────────────
+
+  private extractProjectName(path: string): string {
+    return path.split(/[\\/]/).pop() ?? 'unknown';
   }
 }

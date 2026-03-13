@@ -1,87 +1,83 @@
-import { ArchitectureSmell } from "./smell.types";
-import { computeGraphStats } from "../utils/graph-stats";
-
 import { Injectable } from '@nestjs/common';
+
+import { ArchitectureSmell } from './smell.types';
+import { GraphStats, computeGraphStats } from '../utils/graph-stats';
 
 @Injectable()
 export class SmellDetectorService {
 
-  detect(packageEdges: { from: string; to: string }[]) {
+  // ─── Detection thresholds ────────────────────────────────────────────────
 
-    const smells: ArchitectureSmell[] = [];
+  private static readonly GOD_MODULE_THRESHOLD    = 6;
+  private static readonly HUB_DEPENDENCY_THRESHOLD = 6;
 
+  // ─── Public API ──────────────────────────────────────────────────────────
+
+  detect(packageEdges: { from: string; to: string }[]): ArchitectureSmell[] {
     const stats = computeGraphStats(packageEdges);
 
-    const fanIn = stats.fanIn;
-    const fanOut = stats.fanOut;
-    const allModules = stats.modules;
+    return [
+      ...this.detectGodModules(stats.fanOut),
+      ...this.detectHubDependencies(stats.fanIn),
+      ...this.detectDeadModules(stats),
+    ];
+  }
 
-    // God Module (high fan-out)
-    for (const [module, count] of fanOut.entries()) {
+  // ─── Private detection helpers ───────────────────────────────────────────
 
-      if (count >= 6) {
+  private detectGodModules(fanOut: Map<string, number>): ArchitectureSmell[] {
+    return Array.from(fanOut.entries())
+      .filter(([, count]) => count >= SmellDetectorService.GOD_MODULE_THRESHOLD)
+      .map(([module, count]) => ({
+        type:     'god-module'  as const,
+        message:  `${module} depends on too many modules (${count})`,
+        severity: 'high'        as const,
+        module,
+      }));
+  }
 
-        smells.push({
-          type: "god-module",
-          message: `${module} depends on too many modules (${count})`,
-          severity: "high",
-          module
-        });
+  private detectHubDependencies(fanIn: Map<string, number>): ArchitectureSmell[] {
+    return Array.from(fanIn.entries())
+      .filter(([, count]) => count >= SmellDetectorService.HUB_DEPENDENCY_THRESHOLD)
+      .map(([module, count]) => ({
+        type:     'hub-dependency' as const,
+        message:  `${module} is depended on by many modules (${count})`,
+        severity: 'medium'         as const,
+        module,
+      }));
+  }
 
+  private detectDeadModules(stats: GraphStats): ArchitectureSmell[] {
+    const entryModules = this.computeEntryModules(stats);
+
+    return Array.from(stats.modules)
+      .filter(module => {
+        const hasNoIncoming = (stats.fanIn.get(module)  ?? 0) === 0;
+        const hasNoOutgoing = (stats.fanOut.get(module) ?? 0) === 0;
+        return hasNoIncoming && hasNoOutgoing && !entryModules.has(module);
+      })
+      .map(module => ({
+        type:     'dead-module' as const,
+        message:  `${module} appears unused`,
+        severity: 'low'         as const,
+        module,
+      }));
+  }
+
+  /**
+   * Entry modules have outgoing edges but no incoming edges — they are roots
+   * of the dependency graph and should never be flagged as dead modules.
+   */
+  private computeEntryModules(stats: GraphStats): Set<string> {
+    const entries = new Set<string>();
+
+    stats.fanOut.forEach((count, module) => {
+      const hasNoIncoming = (stats.fanIn.get(module) ?? 0) === 0;
+      if (hasNoIncoming && count > 0) {
+        entries.add(module);
       }
-
-    }
-
-    // Hub Dependency (high fan-in)
-    for (const [module, count] of fanIn.entries()) {
-
-      if (count >= 6) {
-
-        smells.push({
-          type: "hub-dependency",
-          message: `${module} is depended on by many modules (${count})`,
-          severity: "medium",
-          module
-        });
-
-      }
-
-    }
-
-    // Entry Modules
-    const entryModules = new Set<string>();
-
-    fanOut.forEach((count, module) => {
-
-      const incoming = fanIn.get(module) ?? 0;
-
-      if (incoming === 0 && count > 0) {
-        entryModules.add(module);
-      }
-
     });
 
-    // Dead Modules
-    for (const module of allModules) {
-
-      const incoming = fanIn.get(module) ?? 0;
-      const outgoing = fanOut.get(module) ?? 0;
-
-      const isEntry = entryModules.has(module);
-
-      if (incoming === 0 && outgoing === 0 && !isEntry) {
-
-        smells.push({
-          type: "dead-module",
-          message: `${module} appears unused`,
-          severity: "low",
-          module
-        });
-
-      }
-
-    }
-
-    return smells;
+    return entries;
   }
 }

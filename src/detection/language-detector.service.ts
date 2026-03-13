@@ -19,7 +19,7 @@ export class LanguageDetectorService {
 
     const mapping: Record<string, string> = {
       ts: 'TypeScript',
-      js: 'JavaScript',
+        js: 'JavaScript',
       py: 'Python',
       java: 'Java',
       go: 'Go',
