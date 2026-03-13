@@ -1,7 +1,7 @@
 {
   "name": "repo-analyzer",
   "version": "0.0.1",
-  "description": "",
+  "description": "<p align=\"center\">\r   <a href=\"http://nestjs.com/\" target=\"blank\"><img src=\"https://nestjs.com/img/logo-small.svg\" width=\"120\" alt=\"Nest Logo\" /></a>\r </p>",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
@@ -30,9 +30,18 @@
     "rxjs": "^7.8.1",
     "simple-git": "^3.30.0",
     "tree-sitter": "^0.21.1",
+    "tree-sitter-c-sharp": "^0.23.1",
+    "tree-sitter-dart": "^1.0.0",
+    "tree-sitter-elixir": "^0.3.5",
     "tree-sitter-go": "^0.20.0",
     "tree-sitter-java": "^0.21.0",
+    "tree-sitter-kotlin": "^0.3.8",
+    "tree-sitter-php": "^0.24.2",
     "tree-sitter-python": "^0.21.0",
+    "tree-sitter-ruby": "^0.23.1",
+    "tree-sitter-rust": "^0.24.0",
+    "tree-sitter-scala": "^0.24.0",
+    "tree-sitter-swift": "^0.7.1",
     "tree-sitter-typescript": "^0.23.2",
     "ts-morph": "^27.0.2"
   },
@@ -81,5 +90,11 @@
   },
   "bin": {
     "repo-analyzer": "dist/cli/index.js"
-  }
+  },
+  "main": "index.js",
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "keywords": []
 }

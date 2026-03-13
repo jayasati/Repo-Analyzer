@@ -26,7 +26,7 @@ export class AnalysisPipelineService {
   run(path: string): PipelineResult {
     const { fileTree, detection }         = this.runScanPhase(path);
     const { unifiedGraph, packageEdges }  = this.runGraphPhase(fileTree, detection, path);
-    const analysis                        = this.runAnalysisPhase(packageEdges);
+    const analysis                        = this.runAnalysisPhase(packageEdges,detection);
     const summary                         = this.runSummaryPhase(path, detection, unifiedGraph, analysis);
     const diagrams                        = this.runDiagramPhase(unifiedGraph);
 
@@ -75,24 +75,29 @@ export class AnalysisPipelineService {
 
   // ─── Phase 3: Architecture analysis ─────────────────────────────────────
 
-  private runAnalysisPhase(packageEdges: PackageEdge[]): AnalysisPhaseResult {
+// The only change is passing detection.framework to smellDetector.detect()
+// so language-aware thresholds are applied.
+ 
+  private runAnalysisPhase(
+    packageEdges: PackageEdge[],
+    detection:    DetectionResult,          // <── add this parameter
+  ): AnalysisPhaseResult {
     const cycles  = this.analyze.cycleDetector.detect(packageEdges);
-    const smells  = this.analyze.smellDetector.detect(packageEdges);
+    const smells  = this.analyze.smellDetector.detect(packageEdges, detection.framework); // <── pass framework
     const metrics = this.analyze.metricsService.compute(packageEdges, cycles);
     const score   = this.analyze.scoreService.compute(packageEdges, smells, cycles);
-
-    const confidence = this.analyze.confidenceService.compute(metrics, smells, cycles);
+ 
+       const confidence = this.analyze.confidenceService.compute(metrics, smells, cycles, detection.framework);
     const baseline   = this.analyze.baselineComparator.compare(metrics);
     const hotspots   = this.analyze.hotspotDetector.detect(packageEdges);
-
+ 
     const hotspotTarget = hotspots[0]?.module;
     const impact = hotspotTarget
       ? this.analyze.impactAnalyzer.analyze(packageEdges, hotspotTarget)
       : undefined;
-
+ 
     return { cycles, smells, metrics, score, confidence, baseline, hotspots, impact };
   }
-
   // ─── Phase 4: Summary & health report ───────────────────────────────────
 
   private runSummaryPhase(

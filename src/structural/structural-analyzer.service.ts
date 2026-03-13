@@ -2,30 +2,20 @@ import { Injectable } from '@nestjs/common';
 import * as fs from 'fs-extra';
 import { FileNode } from '../shared/types/file-node.type';
 import { DependencyGraph, GraphEdge } from '../graph/unified-graph.types';
-import { extractImports } from './import-extractor';
+import { extractImports, EXT_TO_LANGUAGE, SupportedLanguage } from './import-extractor';
 import { resolveImport } from './import-resolver';
 
-// All file extensions this analyzer understands
-const SUPPORTED_EXTENSIONS = new Set([
-  '.ts', '.tsx',         // TypeScript
-  '.js', '.jsx', '.mjs', // JavaScript
-  '.py',                 // Python
-  '.java',               // Java
-  '.go',                 // Go
-  '.rs',                 // Rust
-  '.cpp', '.cc', '.cxx', // C++
-  '.c',                  // C
-  '.cs',                 // C#
-]);
+// All file extensions this analyzer understands — kept in sync with EXT_TO_LANGUAGE
+const SUPPORTED_EXTENSIONS = new Set(Object.keys(EXT_TO_LANGUAGE));
 
 // Test file patterns — excluded to prevent false dependency cycles
-const TEST_PATTERNS : ReadonlyArray<(name: string) => boolean> =[
-  (name: string) => name.includes('.test.'),   // file.test.ts / .js / .py
-  (name: string) => name.includes('.spec.'),   // file.spec.ts (Jest/Jasmine)
-  (name: string) => name.includes('_test.'),   // file_test.go
-  (name: string) => name.endsWith('_test.go'), // Go convention
-  (name: string) => name.startsWith('test_'),  // Python: test_user.py
-  (name: string) => name === 'run-analysis.ts',// standalone test utility
+const TEST_PATTERNS: ReadonlyArray<(name: string) => boolean> = [
+  (name) => name.includes('.test.'),    // file.test.ts / .js / .py
+  (name) => name.includes('.spec.'),    // file.spec.ts (Jest/Jasmine)
+  (name) => name.includes('_test.'),    // file_test.go
+  (name) => name.endsWith('_test.go'),  // Go convention
+  (name) => name.startsWith('test_'),   // Python: test_user.py
+  (name) => name === 'run-analysis.ts', // standalone test utility
 ];
 
 @Injectable()
@@ -59,7 +49,7 @@ export class StructuralAnalyzerService {
     if (!SUPPORTED_EXTENSIONS.has(ext)) return;
 
     // Skip test files — they create false cross-package edges
-    const fileName = node.path.split(/[\\/]/).pop() ?? '';
+    const fileName = node.path.split(/[/\\]/).pop() ?? '';
     if (TEST_PATTERNS.some(pattern => pattern(fileName))) return;
 
     const normalizedPath = this.normalizePath(node.path);
@@ -71,10 +61,14 @@ export class StructuralAnalyzerService {
     if (!content) return;
 
     // Fast pre-check: skip files with no import-like statements
-    if (!this.hasImports(content)) return;
+    if (!this.hasImports(content, ext)) return;
+
+    // Resolve the language from the extension so extractImports uses
+    // the correct pattern group instead of trying all patterns.
+    const language: SupportedLanguage = EXT_TO_LANGUAGE[ext] ?? 'unknown';
 
     // Extract and resolve all imports
-    const imports = extractImports(content);
+    const imports = extractImports(content, language);
 
     imports.forEach(imp => {
       const resolved = resolveImport(node.path, imp);
@@ -86,24 +80,82 @@ export class StructuralAnalyzerService {
 
       edges.push({
         from: normalizedPath,
-        to: normalizedResolved,
+        to:   normalizedResolved,
         type: 'import',
       });
     });
   }
 
   /**
-   * Fast pre-check to avoid running regex extraction on files
+   * Fast pre-check: avoids running regex extraction on files
    * that clearly have no imports in any supported language.
+   *
+   * Each language has a characteristic keyword that must be present
+   * before we bother running the heavier pattern matching.
    */
-  private hasImports(content: string): boolean {
-    return (
-      content.includes('import')   ||  // TS/JS/Python/Java/Go
-      content.includes('require')  ||  // CommonJS
-      content.includes('#include') ||  // C / C++
-      content.includes(' from ')   ||  // ES modules / Python
-      content.includes('using ')       // C#
-    );
+  private hasImports(content: string, ext: string): boolean {
+    switch (EXT_TO_LANGUAGE[ext]) {
+      case 'typescript':
+      case 'javascript':
+        return content.includes('import') || content.includes('require');
+
+      case 'python':
+        return content.includes('import') || content.includes('from ');
+
+      case 'java':
+      case 'kotlin':
+        return content.includes('import ');
+
+      case 'go':
+        return content.includes('import');
+
+      case 'csharp':
+        return content.includes('using ');
+
+      case 'ruby':
+        return (
+          content.includes('require') ||
+          content.includes('include ') ||
+          content.includes('extend ')
+        );
+
+      case 'php':
+        return content.includes('use ') || content.includes('require') || content.includes('include');
+
+      case 'rust':
+        return content.includes('use ') || content.includes('extern') || content.includes('mod ');
+
+      case 'swift':
+        return content.includes('import ');
+
+      case 'scala':
+        return content.includes('import ');
+
+      case 'dart':
+        return content.includes('import ') || content.includes('export ') || content.includes('part ');
+
+      case 'elixir':
+        return (
+          content.includes('import ') ||
+          content.includes('alias ') ||
+          content.includes('use ') ||
+          content.includes('require ')
+        );
+
+      case 'c':
+      case 'cpp':
+        return content.includes('#include');
+
+      default:
+        // Unknown extension — do a broad check
+        return (
+          content.includes('import')   ||
+          content.includes('require')  ||
+          content.includes('#include') ||
+          content.includes(' from ')   ||
+          content.includes('using ')
+        );
+    }
   }
 
   private getExtension(filePath: string): string {
