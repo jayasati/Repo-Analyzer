@@ -10,30 +10,30 @@ import type { PipelineScanners }  from './pipeline-scanners.types';
 import type { PipelineAnalyzers } from './pipeline-analyzers.types';
 import type { PipelineRenderers } from './pipeline-renderers.types';
 import { AnalysisPhaseResult } from './analysis-phase-result.type';
-import { PipelineResult }    from './pipeline-result.type';
+import { PipelineResult }      from './pipeline-result.type';
 
 @Injectable()
 export class AnalysisPipelineService {
 
   constructor(
-    @Inject(PIPELINE_SCANNERS)   private readonly scan:    PipelineScanners,
-    @Inject(PIPELINE_ANALYZERS)  private readonly analyze: PipelineAnalyzers,
-    @Inject(PIPELINE_RENDERERS)  private readonly render:  PipelineRenderers,
+    @Inject(PIPELINE_SCANNERS)  private readonly scan:    PipelineScanners,
+    @Inject(PIPELINE_ANALYZERS) private readonly analyze: PipelineAnalyzers,
+    @Inject(PIPELINE_RENDERERS) private readonly render:  PipelineRenderers,
   ) {}
 
-  // ─── Public entry point ──────────────────────────────────────────────────
+  // ─── Public entry point ───────────────────────────────────────────────────
 
   run(path: string): PipelineResult {
-    const { fileTree, detection }         = this.runScanPhase(path);
-    const { unifiedGraph, packageEdges }  = this.runGraphPhase(fileTree, detection, path);
-    const analysis                        = this.runAnalysisPhase(packageEdges,detection);
-    const summary                         = this.runSummaryPhase(path, detection, unifiedGraph, analysis);
-    const diagrams                        = this.runDiagramPhase(unifiedGraph);
+    const { fileTree, detection }        = this.runScanPhase(path);
+    const { unifiedGraph, packageEdges } = this.runGraphPhase(fileTree, detection, path);
+    const analysis                       = this.runAnalysisPhase(packageEdges, detection);
+    const summary                        = this.runSummaryPhase(path, detection, unifiedGraph, analysis);
+    const diagrams                       = this.runDiagramPhase(unifiedGraph);
 
     return this.assemblePipelineResult(path, summary, diagrams, unifiedGraph, analysis, detection);
   }
 
-  // ─── Phase 1: Scan ───────────────────────────────────────────────────────
+  // ─── Phase 1: Scan ────────────────────────────────────────────────────────
 
   private runScanPhase(path: string): { fileTree: FileNode; detection: DetectionResult } {
     const fileTree  = this.scan.scanner.scan(path);
@@ -41,7 +41,7 @@ export class AnalysisPipelineService {
     return { fileTree, detection };
   }
 
-  // ─── Phase 2: Build graphs ───────────────────────────────────────────────
+  // ─── Phase 2: Build graphs ────────────────────────────────────────────────
 
   private runGraphPhase(
     fileTree:  FileNode,
@@ -64,47 +64,47 @@ export class AnalysisPipelineService {
       })),
     };
 
-    const unifiedGraph = this.scan.merger.merge(structuralGraph, semanticGraph);
-
-    // Package-level edges are built from the structural graph only, which keeps
-    // the architectural analysis independent of semantic noise.
-    const packageEdges = this.scan.packageGraph.build(structuralGraph);
+    const unifiedGraph  = this.scan.merger.merge(structuralGraph, semanticGraph);
+    const packageEdges  = this.scan.packageGraph.build(structuralGraph);
 
     return { unifiedGraph, packageEdges };
   }
 
-  // ─── Phase 3: Architecture analysis ─────────────────────────────────────
+  // ─── Phase 3: Architecture analysis ──────────────────────────────────────
 
-// The only change is passing detection.framework to smellDetector.detect()
-// so language-aware thresholds are applied.
- 
   private runAnalysisPhase(
     packageEdges: PackageEdge[],
-    detection:    DetectionResult,          // <── add this parameter
+    detection:    DetectionResult,
   ): AnalysisPhaseResult {
     const cycles  = this.analyze.cycleDetector.detect(packageEdges);
-    const smells  = this.analyze.smellDetector.detect(packageEdges, detection.framework); // <── pass framework
+
+    // Pass the detected framework so smell thresholds are calibrated correctly
+    const smells  = this.analyze.smellDetector.detect(packageEdges, detection.framework);
     const metrics = this.analyze.metricsService.compute(packageEdges, cycles);
     const score   = this.analyze.scoreService.compute(packageEdges, smells, cycles);
- 
-       const confidence = this.analyze.confidenceService.compute(metrics, smells, cycles, detection.framework);
-    const baseline   = this.analyze.baselineComparator.compare(metrics);
-    const hotspots   = this.analyze.hotspotDetector.detect(packageEdges);
- 
+
+    // Pass framework so stability tiers are calibrated correctly
+    const confidence = this.analyze.confidenceService.compute(
+      metrics, smells, cycles, detection.framework,
+    );
+
+    const baseline      = this.analyze.baselineComparator.compare(metrics, detection.framework);
+    const hotspots      = this.analyze.hotspotDetector.detect(packageEdges);
     const hotspotTarget = hotspots[0]?.module;
-    const impact = hotspotTarget
+    const impact        = hotspotTarget
       ? this.analyze.impactAnalyzer.analyze(packageEdges, hotspotTarget)
       : undefined;
- 
+
     return { cycles, smells, metrics, score, confidence, baseline, hotspots, impact };
   }
-  // ─── Phase 4: Summary & health report ───────────────────────────────────
+
+  // ─── Phase 4: Summary & health report ────────────────────────────────────
 
   private runSummaryPhase(
-    path:        string,
-    detection:   DetectionResult,
+    path:         string,
+    detection:    DetectionResult,
     unifiedGraph: UnifiedGraph,
-    analysis:    AnalysisPhaseResult,
+    analysis:     AnalysisPhaseResult,
   ) {
     const projectName = this.extractProjectName(path);
 
@@ -122,15 +122,15 @@ export class AnalysisPipelineService {
     return { summary, health };
   }
 
-  // ─── Phase 5: Diagrams ───────────────────────────────────────────────────
+  // ─── Phase 5: Diagrams ────────────────────────────────────────────────────
 
   private runDiagramPhase(unifiedGraph: UnifiedGraph): PipelineResult['diagrams'] {
     const classGraph     = this.render.diagramPrep.forClassDiagram(unifiedGraph);
     const componentGraph = this.render.diagramPrep.forComponentDiagram(unifiedGraph);
 
-    const entryController = unifiedGraph.nodes.find(n => n.type === 'controller')?.id;
-    const sequenceGraph   = entryController
-      ? this.render.diagramPrep.forSequenceDiagram(unifiedGraph, entryController)
+    const entryPoint    = this.render.diagramPrep.resolveSequenceEntryPoint(unifiedGraph);
+    const sequenceGraph = entryPoint
+      ? this.render.diagramPrep.forSequenceDiagram(unifiedGraph, entryPoint)
       : null;
 
     return {
@@ -142,7 +142,7 @@ export class AnalysisPipelineService {
     };
   }
 
-  // ─── Assembly ────────────────────────────────────────────────────────────
+  // ─── Assembly ─────────────────────────────────────────────────────────────
 
   private assemblePipelineResult(
     path:         string,
@@ -170,9 +170,9 @@ export class AnalysisPipelineService {
     };
   }
 
-  // ─── Helpers ─────────────────────────────────────────────────────────────
+  // ─── Helpers ──────────────────────────────────────────────────────────────
 
   private extractProjectName(path: string): string {
-    return path.split(/[\\/]/).pop() ?? 'unknown';
+    return path.split(/[/\\]/).pop() ?? 'unknown';
   }
 }
