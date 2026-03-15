@@ -1,0 +1,1027 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Repo Analyzer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #09090B;
+    --surface: #111113;
+    --surface2: #18181B;
+    --border: #27272A;
+    --border2: #3F3F46;
+    --text: #FAFAFA;
+    --muted: #71717A;
+    --dim: #52525B;
+    --accent: #A3E635;
+    --accent-dim: #1a2d06;
+    --amber: #FCD34D;
+    --amber-dim: #2d1f04;
+    --red: #F87171;
+    --red-dim: #2d0f0f;
+    --blue: #60A5FA;
+    --blue-dim: #0d1f3a;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+  }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .logo-mark {
+    width: 24px;
+    height: 24px;
+    background: var(--accent);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 500;
+    color: #000;
+  }
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--dim);
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+  .status-label { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .status-wrap { display: flex; align-items: center; gap: 8px; }
+
+  /* ── Hero ── */
+  .hero {
+    padding: 64px 24px 48px;
+    max-width: 760px;
+    margin: 0 auto;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--accent);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  h1 {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 12px;
+  }
+  .hero-sub {
+    color: var(--muted);
+    font-size: 15px;
+    margin-bottom: 36px;
+  }
+
+  /* ── Input bar ── */
+  .input-bar {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .input-bar:focus-within { border-color: var(--accent); }
+  .input-prefix {
+    display: flex;
+    align-items: center;
+    padding: 0 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+    border-right: 1px solid var(--border);
+    white-space: nowrap;
+    background: var(--surface2);
+  }
+  .url-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    caret-color: var(--accent);
+  }
+  .url-input::placeholder { color: var(--dim); }
+  .analyze-btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    padding: 0 24px;
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .analyze-btn:hover { opacity: 0.88; }
+  .analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .hint-row {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-top: 14px;
+  }
+  .hint {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--dim);
+  }
+  .hint span { color: var(--muted); }
+
+  /* ── Loading ── */
+  .loading-wrap {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 0 24px 48px;
+    display: none;
+  }
+  .loading-wrap.active { display: block; }
+  .loading-bar-track {
+    height: 2px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 20px;
+  }
+  .loading-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    width: 0%;
+    transition: width 0.4s ease;
+    animation: loadpulse 1.8s ease-in-out infinite;
+  }
+  @keyframes loadpulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+  }
+  .loading-steps { display: flex; flex-direction: column; gap: 8px; }
+  .loading-step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--dim);
+    transition: color 0.3s;
+  }
+  .loading-step.active { color: var(--text); }
+  .loading-step.done { color: var(--accent); }
+  .step-icon { width: 16px; text-align: center; font-size: 11px; }
+
+  /* ── Error ── */
+  .error-box {
+    max-width: 760px;
+    margin: 0 auto 32px;
+    padding: 0 24px;
+    display: none;
+  }
+  .error-box.active { display: block; }
+  .error-inner {
+    background: var(--red-dim);
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    padding: 14px 18px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--red);
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  /* ── Results ── */
+  .results {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 24px 80px;
+    display: none;
+  }
+  .results.active { display: block; }
+
+  /* ── Section ── */
+  .section { margin-bottom: 40px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .section-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--muted);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Score hero ── */
+  .score-hero {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 32px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 32px;
+    margin-bottom: 40px;
+  }
+  .score-ring {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+  }
+  .score-ring svg { transform: rotate(-90deg); }
+  .score-number {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+  }
+  .score-big { font-size: 28px; font-weight: 500; line-height: 1; }
+  .score-label { font-size: 10px; color: var(--muted); margin-top: 2px; }
+  .score-meta { display: flex; flex-direction: column; gap: 10px; }
+  .score-project { font-size: 18px; font-weight: 600; letter-spacing: -0.01em; }
+  .score-sub { font-size: 13px; color: var(--muted); font-family: var(--mono); }
+  .breakdown-pills { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+  .breakdown-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .breakdown-pill .pill-val { color: var(--text); font-weight: 500; }
+
+  /* ── Metric cards grid ── */
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+  }
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .metric-card-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+  .metric-card-value {
+    font-family: var(--mono);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1;
+  }
+  .metric-card-unit {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-family: var(--mono);
+  }
+
+  /* ── Detection strip ── */
+  .detection-strip {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .det-chip {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+  .det-chip-label { font-family: var(--mono); font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .det-chip-value { font-family: var(--mono); font-size: 13px; color: var(--text); font-weight: 500; }
+  .det-chip-value.highlight { color: var(--accent); }
+
+  /* ── Smell / cycle list ── */
+  .issue-list { display: flex; flex-direction: column; gap: 8px; }
+  .issue-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 16px;
+  }
+  .issue-item.sev-high { border-left: 3px solid var(--red); }
+  .issue-item.sev-medium { border-left: 3px solid var(--amber); }
+  .issue-item.sev-low { border-left: 3px solid var(--dim); }
+  .sev-badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sev-badge.high { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .sev-badge.medium { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+  .sev-badge.low { background: var(--surface2); color: var(--dim); border: 1px solid var(--border); }
+  .issue-text { font-size: 13px; color: var(--text); flex: 1; line-height: 1.5; }
+  .issue-type { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Empty state ── */
+  .empty-state {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--accent);
+  }
+  .empty-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+
+  /* ── Baseline ── */
+  .baseline-list { display: flex; flex-direction: column; gap: 6px; }
+  .baseline-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 10px 14px;
+  }
+  .baseline-item.top { border-color: var(--accent); }
+  .baseline-name { font-family: var(--mono); font-size: 12px; color: var(--text); width: 200px; flex-shrink: 0; }
+  .baseline-bar-track { flex: 1; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .baseline-bar-fill { height: 100%; background: var(--dim); border-radius: 2px; transition: width 0.6s ease; }
+  .baseline-item.top .baseline-bar-fill { background: var(--accent); }
+  .baseline-pct { font-family: var(--mono); font-size: 12px; color: var(--muted); width: 40px; text-align: right; flex-shrink: 0; }
+  .baseline-item.top .baseline-pct { color: var(--accent); }
+  .top-label { font-family: var(--mono); font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--accent-dim); color: var(--accent); border: 1px solid var(--accent); flex-shrink: 0; }
+
+  /* ── Diagram block ── */
+  .diagram-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .diagram-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  .diagram-header:hover { background: var(--surface2); }
+  .diagram-title { font-family: var(--mono); font-size: 12px; color: var(--text); }
+  .diagram-toggle { font-family: var(--mono); font-size: 11px; color: var(--dim); }
+  .diagram-body { display: none; }
+  .diagram-body.open { display: block; }
+  .diagram-body pre {
+    padding: 16px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--muted);
+    overflow-x: auto;
+    line-height: 1.7;
+    white-space: pre;
+  }
+  .diagram-body pre .kw { color: var(--blue); }
+  .diagram-body pre .nm { color: var(--accent); }
+  .diagram-body pre .ar { color: var(--amber); }
+
+  /* ── Hotspot list ── */
+  .hotspot-list { display: flex; flex-direction: column; gap: 8px; }
+  .hotspot-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+  }
+  .hotspot-item.risk-high { border-left: 3px solid var(--red); }
+  .hotspot-item.risk-medium { border-left: 3px solid var(--amber); }
+  .hotspot-module { font-family: var(--mono); font-size: 13px; color: var(--text); flex: 1; }
+  .hotspot-fanout { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+  .risk-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 3px;
+    text-transform: uppercase;
+  }
+  .risk-label.high { background: var(--red-dim); color: var(--red); border: 1px solid var(--red); }
+  .risk-label.medium { background: var(--amber-dim); color: var(--amber); border: 1px solid var(--amber); }
+
+  /* ── Health pills ── */
+  .health-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .health-col { display: flex; flex-direction: column; gap: 8px; }
+  .health-col-title { font-family: var(--mono); font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+  .health-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 13px;
+    color: var(--text);
+  }
+  .health-icon { font-size: 12px; }
+
+  /* ── Responsive ── */
+  @media (max-width: 600px) {
+    .score-hero { grid-template-columns: 1fr; }
+    .health-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-mark">RA</div>
+    repo-analyzer
+  </div>
+  <div class="status-wrap">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-label" id="statusLabel">disconnected</span>
+  </div>
+</header>
+
+<!-- Hero input -->
+<div class="hero">
+  <div class="hero-eyebrow">Architecture Intelligence</div>
+  <h1>Analyze any repository</h1>
+  <p class="hero-sub">Paste a GitHub URL to get architecture scores, dependency cycles, smell detection, and structural diagrams.</p>
+
+  <div class="input-bar">
+    <div class="input-prefix">github.com /</div>
+    <input
+      class="url-input"
+      id="urlInput"
+      type="text"
+      placeholder="owner/repo  or  full URL"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">ANALYZE →</button>
+  </div>
+
+  <div class="hint-row">
+    <span class="hint">e.g. <span>https://github.com/nestjs/nest</span></span>
+    <span class="hint">API at <span id="apiUrlHint">http://localhost:3000</span></span>
+  </div>
+</div>
+
+<!-- Loading -->
+<div class="loading-wrap" id="loadingWrap">
+  <div class="loading-bar-track"><div class="loading-bar-fill" id="loadBar"></div></div>
+  <div class="loading-steps" id="loadingSteps"></div>
+</div>
+
+<!-- Error -->
+<div class="error-box" id="errorBox">
+  <div class="error-inner">
+    <span>✕</span>
+    <span id="errorMsg"></span>
+  </div>
+</div>
+
+<!-- Results -->
+<div class="results" id="results">
+
+  <!-- Score hero -->
+  <div class="score-hero" id="scoreHero">
+    <div class="score-ring">
+      <svg width="100" height="100" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#27272A" stroke-width="7"/>
+        <circle cx="50" cy="50" r="42" fill="none" stroke="#A3E635" stroke-width="7"
+          stroke-linecap="round"
+          stroke-dasharray="264"
+          stroke-dashoffset="264"
+          id="scoreArc"
+          style="transition: stroke-dashoffset 1s ease, stroke 0.3s;"/>
+      </svg>
+      <div class="score-number">
+        <span class="score-big" id="scoreBig">—</span>
+        <span class="score-label">/ 100</span>
+      </div>
+    </div>
+    <div class="score-meta">
+      <div class="score-project" id="scoreProject">—</div>
+      <div class="score-sub" id="scoreSub">—</div>
+      <div class="breakdown-pills" id="breakdownPills"></div>
+    </div>
+  </div>
+
+  <!-- Detection -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Detection</span>
+    </div>
+    <div class="detection-strip" id="detectionStrip"></div>
+  </div>
+
+  <!-- Health -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Health Report</span>
+    </div>
+    <div class="health-grid" id="healthGrid"></div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Architecture Metrics</span>
+    </div>
+    <div class="metric-grid" id="metricGrid"></div>
+  </div>
+
+  <!-- Smells -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Architecture Smells</span>
+      <span class="section-badge" id="smellCount">0</span>
+    </div>
+    <div id="smellsList"></div>
+  </div>
+
+  <!-- Cycles -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Circular Dependencies</span>
+      <span class="section-badge" id="cycleCount">0</span>
+    </div>
+    <div id="cyclesList"></div>
+  </div>
+
+  <!-- Hotspots -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Hotspots</span>
+      <span class="section-badge" id="hotspotCount">0</span>
+    </div>
+    <div id="hotspotsList"></div>
+  </div>
+
+  <!-- Baseline -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">Baseline Comparison</span>
+    </div>
+    <div class="baseline-list" id="baselineList"></div>
+  </div>
+
+  <!-- Diagrams -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-title">PlantUML Diagrams</span>
+    </div>
+    <div id="diagramsList"></div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = 'http://localhost:3000';
+
+  const STEPS = [
+    'Scanning repository...',
+    'Building dependency graph...',
+    'Running cycle detection...',
+    'Detecting architecture smells...',
+    'Computing metrics & scores...',
+    'Generating diagrams...',
+    'Assembling report...',
+  ];
+
+  let stepInterval = null;
+
+  function el(id) { return document.getElementById(id); }
+
+  // ── Ping backend on load ──────────────────────────────────────────────────
+  async function pingBackend() {
+    try {
+      await fetch(API_BASE, { method: 'HEAD', signal: AbortSignal.timeout(2000) });
+      setStatus(true);
+    } catch {
+      setStatus(false);
+    }
+  }
+
+  function setStatus(online) {
+    const dot = el('statusDot');
+    const lbl = el('statusLabel');
+    dot.className = 'status-dot' + (online ? ' online' : '');
+    lbl.textContent = online ? 'connected' : 'disconnected';
+  }
+
+  pingBackend();
+
+  // ── URL normalization ─────────────────────────────────────────────────────
+  function normalizeUrl(raw) {
+    raw = raw.trim();
+    if (!raw) return null;
+    if (raw.startsWith('http')) return raw;
+    if (raw.includes('/')) return 'https://github.com/' + raw;
+    return null;
+  }
+
+  // ── Loading steps animation ───────────────────────────────────────────────
+  function startLoadingAnimation() {
+    const wrap = el('loadingWrap');
+    const stepsEl = el('loadingSteps');
+    const bar = el('loadBar');
+    wrap.classList.add('active');
+    stepsEl.innerHTML = STEPS.map((s, i) =>
+      `<div class="loading-step" id="step-${i}">
+        <span class="step-icon" id="step-icon-${i}">○</span>
+        <span>${s}</span>
+      </div>`
+    ).join('');
+    bar.style.width = '5%';
+
+    let current = 0;
+    stepInterval = setInterval(() => {
+      if (current < STEPS.length) {
+        if (current > 0) {
+          el(`step-${current - 1}`).className = 'loading-step done';
+          el(`step-icon-${current - 1}`).textContent = '✓';
+        }
+        el(`step-${current}`).className = 'loading-step active';
+        el(`step-icon-${current}`).textContent = '●';
+        bar.style.width = `${10 + (current / STEPS.length) * 80}%`;
+        current++;
+      }
+    }, 700);
+  }
+
+  function stopLoadingAnimation(success) {
+    clearInterval(stepInterval);
+    const bar = el('loadBar');
+    bar.style.width = success ? '100%' : '0%';
+    for (let i = 0; i < STEPS.length; i++) {
+      if (success) {
+        el(`step-${i}`).className = 'loading-step done';
+        el(`step-icon-${i}`).textContent = '✓';
+      }
+    }
+    setTimeout(() => { el('loadingWrap').classList.remove('active'); }, 600);
+  }
+
+  // ── Main analysis ─────────────────────────────────────────────────────────
+  async function runAnalysis() {
+    const raw = el('urlInput').value;
+    const url = normalizeUrl(raw);
+
+    el('errorBox').classList.remove('active');
+    el('results').classList.remove('active');
+
+    if (!url) {
+      showError('Enter a GitHub URL or owner/repo path.');
+      return;
+    }
+
+    el('analyzeBtn').disabled = true;
+    startLoadingAnimation();
+    setStatus(true);
+
+    try {
+      const res = await fetch(`${API_BASE}/analyze`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: url }),
+      });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.message || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      stopLoadingAnimation(true);
+      renderResults(data);
+      setStatus(true);
+
+    } catch (err) {
+      stopLoadingAnimation(false);
+      showError(err.message || 'Request failed. Is the backend running?');
+      setStatus(false);
+    } finally {
+      el('analyzeBtn').disabled = false;
+    }
+  }
+
+  // Allow Enter key
+  el('urlInput').addEventListener('keydown', e => { if (e.key === 'Enter') runAnalysis(); });
+
+  function showError(msg) {
+    el('errorMsg').textContent = msg;
+    el('errorBox').classList.add('active');
+  }
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  function renderResults(d) {
+    renderScoreHero(d);
+    renderDetection(d.detection);
+    renderHealth(d.health);
+    renderMetrics(d.metrics);
+    renderSmells(d.smells || []);
+    renderCycles(d.cycles || []);
+    renderHotspots(d.hotspots || []);
+    renderBaseline(d.baseline || []);
+    renderDiagrams(d.diagrams || {});
+    el('results').classList.add('active');
+    el('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function scoreColor(s) {
+    if (s >= 80) return '#A3E635';
+    if (s >= 60) return '#FCD34D';
+    return '#F87171';
+  }
+
+  function renderScoreHero(d) {
+    const score = d.score?.overall ?? 0;
+    const circumference = 264;
+    const offset = circumference - (score / 100) * circumference;
+    const arc = el('scoreArc');
+    arc.style.stroke = scoreColor(score);
+    setTimeout(() => { arc.style.strokeDashoffset = offset; }, 100);
+
+    el('scoreBig').textContent = score;
+    el('scoreBig').style.color = scoreColor(score);
+    el('scoreProject').textContent = d.projectName || 'Repository';
+
+    const fw = d.detection?.framework ? ` · ${d.detection.framework}` : '';
+    const lang = d.detection?.languages?.[0]?.name || '';
+    el('scoreSub').textContent = lang + fw;
+
+    const bd = d.score?.breakdown || {};
+    el('breakdownPills').innerHTML = [
+      { label: 'modularity', val: bd.modularity },
+      { label: 'coupling',   val: bd.coupling   },
+      { label: 'smells',     val: bd.smells      },
+    ].map(p => `
+      <div class="breakdown-pill">
+        ${p.label}
+        <span class="pill-val" style="color:${scoreColor(p.val || 0)}">${p.val ?? '—'}</span>
+      </div>`).join('');
+  }
+
+  function renderDetection(det) {
+    if (!det) return;
+    const chips = [
+      { label: 'language',   value: det.languages?.[0]?.name || 'unknown', hl: false },
+      { label: 'framework',  value: det.framework || 'none', hl: !!det.framework },
+      { label: 'orm',        value: det.orm || 'none', hl: !!det.orm },
+      { label: 'depth',      value: det.analysisDepth || '—', hl: false },
+      { label: 'confidence', value: det.languages?.[0]?.confidence != null
+          ? `${Math.round(det.languages[0].confidence * 100)}%` : '—', hl: false },
+    ];
+    el('detectionStrip').innerHTML = chips.map(c => `
+      <div class="det-chip">
+        <span class="det-chip-label">${c.label}</span>
+        <span class="det-chip-value ${c.hl ? 'highlight' : ''}">${c.value}</span>
+      </div>`).join('');
+  }
+
+  function renderHealth(h) {
+    if (!h) return;
+    const strengths  = h.strengths  || [];
+    const weaknesses = h.weaknesses || [];
+    el('healthGrid').innerHTML = `
+      <div class="health-col">
+        <div class="health-col-title">Strengths</div>
+        ${strengths.length
+          ? strengths.map(s => `<div class="health-item"><span class="health-icon" style="color:#A3E635">✓</span>${s}</div>`).join('')
+          : '<div class="health-item" style="color:var(--dim)">None identified</div>'}
+      </div>
+      <div class="health-col">
+        <div class="health-col-title">Weaknesses</div>
+        ${weaknesses.length
+          ? weaknesses.map(w => `<div class="health-item"><span class="health-icon" style="color:#F87171">✕</span>${w}</div>`).join('')
+          : '<div class="health-item" style="color:var(--dim)">None identified</div>'}
+      </div>`;
+  }
+
+  function renderMetrics(m) {
+    if (!m) return;
+    const cards = [
+      { label: 'Modules',    value: m.moduleCount,         unit: 'packages' },
+      { label: 'Deps',       value: m.dependencyCount,     unit: 'edges' },
+      { label: 'Cycles',     value: m.cycleCount,          unit: 'detected' },
+      { label: 'Avg Fan-In', value: m.averageFanIn,        unit: 'per module' },
+      { label: 'Avg Fan-Out',value: m.averageFanOut,       unit: 'per module' },
+      { label: 'Max Fan-Out',value: m.maxFanOut,           unit: 'hotspot' },
+      { label: 'Density',    value: m.dependencyDensity != null
+          ? (m.dependencyDensity * 100).toFixed(1) + '%' : '—', unit: 'coupling' },
+    ];
+    el('metricGrid').innerHTML = cards.map(c => `
+      <div class="metric-card">
+        <div class="metric-card-label">${c.label}</div>
+        <div class="metric-card-value">${c.value ?? '—'}</div>
+        <div class="metric-card-unit">${c.unit}</div>
+      </div>`).join('');
+  }
+
+  function renderSmells(smells) {
+    el('smellCount').textContent = smells.length;
+    if (!smells.length) {
+      el('smellsList').innerHTML = `<div class="empty-state"><div class="empty-dot"></div>No architecture smells detected</div>`;
+      return;
+    }
+    el('smellsList').innerHTML = `<div class="issue-list">` +
+      smells.map(s => `
+        <div class="issue-item sev-${s.severity}">
+          <span class="sev-badge ${s.severity}">${s.severity}</span>
+          <div>
+            <div class="issue-text">${s.message}</div>
+            <div class="issue-type">${s.type}</div>
+          </div>
+        </div>`).join('') + `</div>`;
+  }
+
+  function renderCycles(cycles) {
+    el('cycleCount').textContent = cycles.length;
+    if (!cycles.length) {
+      el('cyclesList').innerHTML = `<div class="empty-state"><div class="empty-dot"></div>No circular dependencies detected</div>`;
+      return;
+    }
+    el('cyclesList').innerHTML = `<div class="issue-list">` +
+      cycles.map(c => `
+        <div class="issue-item sev-high">
+          <span class="sev-badge high">cycle</span>
+          <div class="issue-text" style="font-family:var(--mono);font-size:12px;">
+            ${c.nodes.join(' → ')}
+          </div>
+        </div>`).join('') + `</div>`;
+  }
+
+  function renderHotspots(hotspots) {
+    el('hotspotCount').textContent = hotspots.length;
+    if (!hotspots.length) {
+      el('hotspotsList').innerHTML = `<div class="empty-state"><div class="empty-dot"></div>No hotspots detected</div>`;
+      return;
+    }
+    el('hotspotsList').innerHTML = `<div class="hotspot-list">` +
+      hotspots.map(h => `
+        <div class="hotspot-item risk-${h.risk}">
+          <span class="risk-label ${h.risk}">${h.risk}</span>
+          <span class="hotspot-module">${h.module}</span>
+          <span class="hotspot-fanout">fan-out: ${h.fanOut}</span>
+        </div>`).join('') + `</div>`;
+  }
+
+  function renderBaseline(baseline) {
+    if (!baseline.length) {
+      el('baselineList').innerHTML = `<div class="empty-state"><div class="empty-dot"></div>No baseline data</div>`;
+      return;
+    }
+    const top3 = baseline.slice(0, Math.min(8, baseline.length));
+    el('baselineList').innerHTML = top3.map((b, i) => {
+      const pct = Math.round(b.similarity * 100);
+      const isTop = i === 0;
+      return `
+        <div class="baseline-item ${isTop ? 'top' : ''}">
+          ${isTop ? `<span class="top-label">best match</span>` : ''}
+          <span class="baseline-name">${b.name}</span>
+          <div class="baseline-bar-track">
+            <div class="baseline-bar-fill" style="width:${pct}%"></div>
+          </div>
+          <span class="baseline-pct">${pct}%</span>
+        </div>`;
+    }).join('');
+  }
+
+  function syntaxHighlight(code) {
+    const a1 = '-->';
+    const a2 = '->>';
+    const a3 = '->';
+    let out = code
+      .replace(/@startuml|@enduml/g, s => `<span class="kw">${s}</span>`)
+      .replace(/\b(class|component|participant)\b/g, s => `<span class="kw">${s}</span>`);
+    out = out.split(a1).join(`<span class="ar">${a1}</span>`);
+    out = out.split(a2).join(`<span class="ar">${a2}</span>`);
+    out = out.split(a3).join(`<span class="ar">${a3}</span>`);
+    return out.replace(/\b([A-Z][A-Za-z0-9]+)\b/g, s => `<span class="nm">${s}</span>`);
+  }
+
+  function renderDiagrams(diags) {
+    const entries = [
+      { key: 'classDiagram',     label: 'Class Diagram' },
+      { key: 'componentDiagram', label: 'Component Diagram' },
+      { key: 'sequenceDiagram',  label: 'Sequence Diagram' },
+    ];
+    el('diagramsList').innerHTML = entries
+      .filter(e => diags[e.key])
+      .map(e => `
+        <div class="diagram-block">
+          <div class="diagram-header" onclick="toggleDiagram(this)">
+            <span class="diagram-title">${e.label}</span>
+            <span class="diagram-toggle">expand ↓</span>
+          </div>
+          <div class="diagram-body">
+            <pre>${syntaxHighlight(diags[e.key])}</pre>
+          </div>
+        </div>`).join('') || `<div class="empty-state"><div class="empty-dot"></div>No diagrams generated</div>`;
+  }
+
+  function toggleDiagram(header) {
+    const body = header.nextElementSibling;
+    const toggle = header.querySelector('.diagram-toggle');
+    const isOpen = body.classList.toggle('open');
+    toggle.textContent = isOpen ? 'collapse ↑' : 'expand ↓';
+  }
+</script>
+</body>
+</html>

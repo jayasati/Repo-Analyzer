@@ -3,9 +3,11 @@ import { ArchitectureReportService } from "./architecture-report.service";
 import { RecommendationService } from "./recommend/recommendation.service"; 
 
 import { runAnalysis } from "../utils/run-analysis";
+import { ArchitectureMetricsService } from "../metrics/architecture-metrics.service";
 
 const { packageEdges, cycles, smells } = runAnalysis();
-const scoring = new ArchitectureScoreService();
+const metricsService = new ArchitectureMetricsService();
+const scoring = new ArchitectureScoreService(metricsService);
 const reportService = new ArchitectureReportService();
 const recommendationService = new RecommendationService();
 

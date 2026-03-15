@@ -6,6 +6,34 @@ export interface DiagramGraph {
   edges: GraphEdge[];
 }
 
+// ── Same constants as PackageGraphService (kept local to avoid circular imports) ──
+
+const SKIP_SEGMENTS = new Set([
+  'main', 'test', 'tests', 'it',
+  'java', 'kotlin', 'scala', 'groovy',
+  'resources', 'webapp',
+  'python', 'lib', 'libs',
+  'app', 'src', 'source',
+]);
+
+const DOMAIN_SEGMENTS = new Set([
+  'com', 'org', 'io', 'net', 'edu', 'gov', 'co', 'me', 'dev',
+  'github', 'gitlab', 'bitbucket',
+  'google', 'microsoft', 'amazon', 'apache', 'eclipse',
+  'spring', 'springframework', 'springboot',
+]);
+
+const TOPLEVEL_NAMESPACE_DIRS = new Set([
+  'internal', 'pkg', 'cmd', 'api', 'handler', 'handlers',
+  'service', 'services', 'repository', 'repositories',
+  'controller', 'controllers', 'domain', 'usecase', 'usecases',
+  'infrastructure', 'adapter', 'adapters', 'module', 'modules',
+]);
+
+const JAVA_STYLE_EXTS = new Set([
+  '.java', '.kt', '.kts', '.scala', '.groovy', '.clj',
+]);
+
 @Injectable()
 export class DiagramPrepService {
 
@@ -44,18 +72,17 @@ export class DiagramPrepService {
   }
 
   private buildPackageComponentDiagram(graph: UnifiedGraph): DiagramGraph {
-    const packageOf = (nodeId: string): string | null => this.extractTopLevelPackage(nodeId);
     const packages = new Set<string>();
     for (const node of graph.nodes) {
-      const pkg = packageOf(node.id);
+      const pkg = this.extractTopLevelPackage(node.id);
       if (pkg) packages.add(pkg);
     }
     const seen = new Set<string>();
     const edges: GraphEdge[] = [];
     for (const edge of graph.edges) {
       if (edge.type !== 'import') continue;
-      const from = packageOf(edge.from);
-      const to   = packageOf(edge.to);
+      const from = this.extractTopLevelPackage(edge.from);
+      const to   = this.extractTopLevelPackage(edge.to);
       if (!from || !to || from === to) continue;
       const key = `${from}->${to}`;
       if (seen.has(key)) continue;
@@ -104,13 +131,16 @@ export class DiagramPrepService {
     return null;
   }
 
+  // ─── Helpers ──────────────────────────────────────────────────────────────
+
   private normalizeId(id: string): string {
     if (id.includes('import(')) {
       const match = id.match(/\.([A-Za-z0-9_]+)\)?$/);
       return match ? match[1] : id;
     }
     if (id.includes('/') || id.includes('\\')) {
-      return id.split(/[/\\]/).pop()!.replace(/\.(ts|js)$/, '');
+      return id.split(/[/\\]/).pop()!
+        .replace(/\.(ts|tsx|js|jsx|java|kt|kts|scala|py|go|rb|php|rs|cs)$/, '');
     }
     return id;
   }
@@ -121,14 +151,54 @@ export class DiagramPrepService {
     return base.split(/[-.]/).map(p => p.charAt(0).toUpperCase() + p.slice(1)).join('');
   }
 
+  /** Fixed multi-language implementation — mirrors PackageGraphService. */
   private extractTopLevelPackage(filePath: string): string | null {
     const normalized = filePath.replace(/\\/g, '/');
-    const parts = normalized.split('/');
+    const parts      = normalized.split('/').filter(p => p.length > 0);
+
+    const fileName   = parts[parts.length - 1] ?? '';
+    const dotIdx     = fileName.lastIndexOf('.');
+    const ext        = dotIdx >= 0 ? fileName.slice(dotIdx).toLowerCase() : '';
+    const isJavaLike = JAVA_STYLE_EXTS.has(ext);
+
     const srcIndex = parts.indexOf('src');
-    if (srcIndex === -1) return null;
-    const next = parts[srcIndex + 1];
-    if (!next || next.includes('.')) return null;
-    return next;
+
+    if (srcIndex !== -1) {
+      return isJavaLike
+        ? this.lastMeaningfulDir(parts, srcIndex + 1, parts.length - 1)
+        : this.firstMeaningfulDir(parts, srcIndex + 1, parts.length - 1);
+    }
+
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (TOPLEVEL_NAMESPACE_DIRS.has(parts[i])) {
+        const next = parts[i + 1];
+        if (next && !next.includes('.')) return next;
+      }
+    }
+
+    return this.firstMeaningfulDir(parts, 0, parts.length - 1);
+  }
+
+  private firstMeaningfulDir(parts: string[], start: number, end: number): string | null {
+    for (let i = start; i < end; i++) {
+      const seg = parts[i];
+      if (seg.includes('.'))                       return null;
+      if (SKIP_SEGMENTS.has(seg))                  continue;
+      if (DOMAIN_SEGMENTS.has(seg.toLowerCase()))  continue;
+      return seg;
+    }
+    return null;
+  }
+
+  private lastMeaningfulDir(parts: string[], start: number, end: number): string | null {
+    for (let i = end - 1; i >= start; i--) {
+      const seg = parts[i];
+      if (seg.includes('.'))                       continue;
+      if (SKIP_SEGMENTS.has(seg))                  continue;
+      if (DOMAIN_SEGMENTS.has(seg.toLowerCase()))  continue;
+      return seg;
+    }
+    return null;
   }
 
   private isValidNode(id: string): boolean {

@@ -1,0 +1,160 @@
+/* ═══════════════════════════════════════════
+   REPO ANALYZER — Animations
+   ═══════════════════════════════════════════ */
+
+/* ── Keyframes ── */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; box-shadow: 0 0 8px var(--lime); }
+  50%       { opacity: 0.5; box-shadow: 0 0 3px var(--lime); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes loadSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes barPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+/* ── Loading state ── */
+.loading-wrap {
+  padding: 0 0 var(--gap-xl);
+  display: none;
+}
+
+.loading-wrap.--active { display: block; }
+
+.loading-track {
+  height: 2px;
+  background: var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: var(--gap-xl);
+}
+
+.loading-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--lime), var(--cyan));
+  border-radius: 2px;
+  width: 0%;
+  transition: width 0.5s ease;
+  animation: barPulse 1.8s ease-in-out infinite;
+}
+
+.loading-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.loading-step {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--dim);
+  transition: color var(--t-normal);
+}
+
+.loading-step.--active { color: var(--text); }
+.loading-step.--done   { color: var(--lime-2); }
+
+.loading-step__icon {
+  width: 16px;
+  text-align: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+/* ── Spinner ── */
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--border);
+  border-top-color: var(--lime);
+  border-radius: 50%;
+  animation: loadSpin 0.7s linear infinite;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* ── Results appear ── */
+.results {
+  display: none;
+  animation: slideUp 0.4s ease;
+}
+
+.results.--active { display: block; }
+
+/* ── Staggered item reveal ── */
+.section {
+  animation: slideUp 0.4s ease both;
+}
+
+/* ── Background grid decoration ── */
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.025;
+  background-image:
+    linear-gradient(var(--lime) 1px, transparent 1px),
+    linear-gradient(90deg, var(--lime) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* ── Glow orb ── */
+.bg-orb {
+  position: fixed;
+  pointer-events: none;
+  z-index: 0;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.06;
+}
+
+.bg-orb.--lime {
+  width: 600px;
+  height: 600px;
+  top: -200px;
+  right: -150px;
+  background: var(--lime);
+}
+
+.bg-orb.--blue {
+  width: 400px;
+  height: 400px;
+  bottom: 100px;
+  left: -100px;
+  background: var(--blue);
+}
+
+/* ── Z-layer for content ── */
+.topbar,
+.main {
+  position: relative;
+  z-index: 1;
+}

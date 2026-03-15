@@ -1,0 +1,99 @@
+/* ═══════════════════════════════════════════
+   REPO ANALYZER — Design Tokens & Reset
+   ═══════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Syne:wght@400;600;700;800&display=swap');
+
+:root {
+  /* ── Colors ── */
+  --bg-0:        #060608;
+  --bg-1:        #0D0D10;
+  --bg-2:        #13131A;
+  --bg-3:        #1A1A24;
+  --surface:     #1E1E2C;
+  --surface-2:   #252535;
+  --border:      #2A2A3D;
+  --border-2:    #3A3A55;
+
+  --text:        #F0F0F8;
+  --text-2:      #A8A8C8;
+  --muted:       #6868A0;
+  --dim:         #3D3D5C;
+
+  --lime:        #AAFF5C;
+  --lime-2:      #88DD3A;
+  --lime-dim:    rgba(170,255,92,0.08);
+  --lime-glow:   rgba(170,255,92,0.25);
+
+  --amber:       #FFB830;
+  --amber-dim:   rgba(255,184,48,0.08);
+
+  --red:         #FF4D6D;
+  --red-dim:     rgba(255,77,109,0.08);
+
+  --blue:        #5BA4FF;
+  --blue-dim:    rgba(91,164,255,0.08);
+
+  --cyan:        #3DFFF0;
+
+  /* ── Typography ── */
+  --font-mono:   'JetBrains Mono', 'Fira Code', monospace;
+  --font-display:'Syne', sans-serif;
+
+  /* ── Spacing ── */
+  --gap-xs:  4px;
+  --gap-sm:  8px;
+  --gap-md:  16px;
+  --gap-lg:  24px;
+  --gap-xl:  40px;
+  --gap-2xl: 64px;
+
+  /* ── Radius ── */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* ── Transitions ── */
+  --t-fast:   150ms ease;
+  --t-normal: 250ms ease;
+  --t-slow:   400ms ease;
+
+  /* ── Z-index ── */
+  --z-topbar: 100;
+  --z-modal:  200;
+}
+
+/* ── Reset ── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg-0);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+::selection {
+  background: var(--lime-glow);
+  color: var(--lime);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted); }
