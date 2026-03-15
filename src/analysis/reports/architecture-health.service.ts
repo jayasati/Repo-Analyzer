@@ -14,12 +14,26 @@ export class ArchitectureHealthService {
   private static readonly HEALTH_THRESHOLD = 70;
 
   generate(
-    score:  ArchitectureScore,
+    score: ArchitectureScore,
     smells: ArchitectureSmell[],
   ): ArchitectureHealth {
     const { HEALTH_THRESHOLD } = ArchitectureHealthService;
-    const strengths:  string[] = [];
+    const strengths: string[] = [];
     const weaknesses: string[] = [];
+
+    // No-data case — graph extraction returned nothing, don't misreport.
+    if (
+      score.overall === 0 &&
+      score.breakdown.modularity === 0 &&
+      score.breakdown.coupling === 0 &&
+      smells.length === 0
+    ) {
+      return {
+        score: 0,
+        strengths: [],
+        weaknesses: ['Insufficient data — no inter-package dependencies detected'],
+      };
+    }
 
     if (score.breakdown.modularity > HEALTH_THRESHOLD) {
       strengths.push('High modularity');

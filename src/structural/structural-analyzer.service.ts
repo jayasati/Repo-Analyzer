@@ -70,20 +70,30 @@ export class StructuralAnalyzerService {
     // Extract and resolve all imports
     const imports = extractImports(content, language);
 
-    imports.forEach(imp => {
-      const resolved = resolveImport(node.path, imp);
-      if (!resolved) return;
+imports.forEach(imp => {
 
-      const normalizedResolved = this.normalizePath(resolved);
+  let resolved: string | null = null;
 
-      nodes.set(normalizedResolved, { id: normalizedResolved, type: 'file' });
+  // Java imports are package names, not file paths
+  if (language === 'java' || language === 'kotlin') {
+    resolved = this.resolveJavaImport(imp);
+  } else {
+    resolved = resolveImport(node.path, imp);
+  }
 
-      edges.push({
-        from: normalizedPath,
-        to:   normalizedResolved,
-        type: 'import',
-      });
-    });
+  if (!resolved) return;
+
+  const normalizedResolved = this.normalizePath(resolved);
+
+  nodes.set(normalizedResolved, { id: normalizedResolved, type: 'file' });
+
+  edges.push({
+    from: normalizedPath,
+    to:   normalizedResolved,
+    type: 'import',
+  });
+
+});
   }
 
   /**
@@ -178,4 +188,20 @@ export class StructuralAnalyzerService {
       return null;
     }
   }
+private resolveJavaImport(pkg: string): string | null {
+
+  // Ignore external libraries
+  if (!pkg.startsWith('com.') && !pkg.startsWith('org.') && !pkg.startsWith('net.')) {
+    return null;
+  }
+
+  const parts = pkg.split('.');
+
+  if (parts.length < 2) return null;
+
+  // module name is second last segment
+  const module = parts[parts.length - 2];
+
+  return module;
+}
 }

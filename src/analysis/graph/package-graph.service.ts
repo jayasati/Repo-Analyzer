@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 
-import { DependencyGraph } from '../../graph/unified-graph.types';
+import { UnifiedGraph } from "../../graph/unified-graph.types";
 
 export interface PackageEdge {
   from: string;
@@ -67,19 +67,26 @@ const JAVA_STYLE_EXTS = new Set([
 @Injectable()
 export class PackageGraphService {
 
-  build(graph: DependencyGraph): PackageEdge[] {
+ build(graph: UnifiedGraph): PackageEdge[] {
     const edges: PackageEdge[] = [];
     const seen  = new Set<string>();
 
     for (const edge of graph.edges) {
       const fromPkg = this.extractTopLevelPackage(edge.from);
-      const toPkg   = this.extractTopLevelPackage(edge.to);
+      let toPkg = this.extractTopLevelPackage(edge.to);
 
+// If extractor fails but edge.to is already a module name,
+// use it directly
+if (!toPkg && !edge.to.includes('/')) {
+  toPkg = edge.to;
+}
+        console.log("EDGE:", edge.from, "→", edge.to);
+        console.log("PKG:", fromPkg, "→", toPkg);
       // Files that live directly at root/src level with no sub-package
       if (!fromPkg || !toPkg) continue;
 
-      // Intra-package imports carry no architectural signal
-      if (fromPkg === toPkg) continue;
+    // Skip only trivial self loops
+    if (fromPkg === toPkg && edge.from === edge.to) continue;
 
       const key = `${fromPkg}->${toPkg}`;
       if (seen.has(key)) continue;

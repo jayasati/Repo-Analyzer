@@ -8,4 +8,7 @@ export interface ArchitectureScore {
     smells: number;
   };
 
+  /** True when graph extraction returned no package edges — no meaningful data to score. */
+  noData?: boolean;
+
 }

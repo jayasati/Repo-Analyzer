@@ -63,10 +63,13 @@ export class AnalysisPipelineService {
         type: 'constructor-injection' as const,
       })),
     };
+  
 
     const unifiedGraph  = this.scan.merger.merge(structuralGraph, semanticGraph);
-    const packageEdges  = this.scan.packageGraph.build(structuralGraph);
-
+    const packageEdges  = this.scan.packageGraph.build(unifiedGraph);
+console.log("STRUCTURAL EDGES:", structuralGraph.edges.length);
+console.log("SEMANTIC EDGES:", semanticGraph.edges.length);
+console.log("UNIFIED EDGES:", unifiedGraph.edges.length);
     return { unifiedGraph, packageEdges };
   }
 
