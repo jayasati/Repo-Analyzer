@@ -1,0 +1,17 @@
+import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
+import { ANALYSIS_QUEUE } from './queue.constants';
+import { AnalysisJobProcessor } from './analysis-job.processor';
+import { CoreModule } from '../core/core.module';
+import { CacheModule } from '../cache/cache.module';
+
+@Module({
+  imports: [
+    BullModule.registerQueue({ name: ANALYSIS_QUEUE }),
+    CoreModule,
+    CacheModule,
+  ],
+  providers: [AnalysisJobProcessor],
+  exports:   [BullModule],
+})
+export class QueueModule {}

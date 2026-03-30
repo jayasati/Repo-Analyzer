@@ -1,51 +1,102 @@
 import {
-  Body, Controller, HttpCode, HttpStatus, Post,
-  UseGuards,
+  Body, Controller, Get, HttpCode, HttpStatus,
+  NotFoundException, Param, Post, Res, UseGuards,
 } from '@nestjs/common';
-import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
-import { AnalyzerService } from '../core/analyzer.service';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
+import { ThrottlerGuard } from '@nestjs/throttler';
+import type { Response } from 'express';
+import { randomUUID } from 'crypto';
 import { AnalyzeRequestDto } from './dto/analyze-request.dto';
+import { ANALYSIS_QUEUE } from '../queue/queue.constants';
+import { AnalysisCacheService } from '../cache/analysis-cache.service';
 import { AppLoggerService } from '../common/logger/app-logger.service';
-import { PipelineResult } from '../core/pipeline/pipeline-result.type';
-import { APP_CONSTANTS } from '../common/constants/app.constants';
-import { BadRequestException } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { JobProgressEvent } from '../queue/analysis-job.types';
 
-/**
- * WHY for ThrottlerGuard: a single user could trivially trigger hundreds of
- * git clone + full analysis cycles, exhausting disk and CPU. Rate limiting
- * at the controller level is the simplest first line of defence.
- */
 @Controller('analyze')
 @UseGuards(ThrottlerGuard)
 export class AnalyzeController {
   constructor(
-    private readonly analyzer: AnalyzerService,
-    private readonly logger:   AppLoggerService,
+    @InjectQueue(ANALYSIS_QUEUE) private readonly queue: Queue,
+    private readonly cache:   AnalysisCacheService,
+    private readonly logger:  AppLoggerService,
+    private readonly emitter: EventEmitter2,
   ) {}
 
+  /**
+   * Enqueue analysis and return a jobId immediately.
+   * The client polls GET /analyze/:jobId or streams SSE at GET /analyze/:jobId/progress.
+   *
+   * WHY non-blocking: 3-minute HTTP connections don't work reliably across
+   * load balancers, mobile networks, or browser timeout defaults.
+   */
   @Post()
-  @HttpCode(HttpStatus.OK)
-  @Throttle({
-    default: {
-      ttl:   APP_CONSTANTS.RATE_LIMIT_TTL_SECONDS * 1000,
-      limit: APP_CONSTANTS.RATE_LIMIT_MAX_REQUESTS,
-    },
-  })
-  async analyze(@Body() body: AnalyzeRequestDto): Promise<PipelineResult> {
+  @HttpCode(HttpStatus.ACCEPTED)
+  async enqueue(@Body() body: AnalyzeRequestDto): Promise<{ jobId: string }> {
+    const jobId = randomUUID();
     const isGitHub = body.source.startsWith('https://');
 
-    this.logger.log(
-      `Analysis requested: ${isGitHub ? 'github' : 'local'} — ${body.source}`,
-      'AnalyzeController',
+    await this.queue.add(
+      'analyze',
+      { jobId, source: body.source, isGitHub, requestedAt: new Date().toISOString() },
+      {
+        jobId,
+        removeOnComplete: { count: 100 },
+        removeOnFail:     { count: 50 },
+        attempts:         1, // No retries for user-requested analysis
+      },
     );
 
-    // Block local paths in production
-    if (!isGitHub && process.env.NODE_ENV === 'production') {
-      throw new BadRequestException('Local path analysis is not available in production');
-    }
+    this.logger.log(`Enqueued job ${jobId} for ${body.source}`, 'AnalyzeController');
+    return { jobId };
+  }
 
-    return isGitHub
-      ? this.analyzer.analyzeGitHub(body.source)
-      : this.analyzer.analyzeLocal(body.source);
+  /**
+   * Poll for the result once complete.
+   */
+  @Get(':jobId')
+  async getResult(@Param('jobId') jobId: string) {
+    const result = await this.cache.get(jobId);
+    if (!result) throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
+    return result;
+  }
+
+  /**
+   * Server-Sent Events stream — delivers real-time progress to the browser.
+   *
+   * WHY SSE over WebSockets: SSE is one-way (server → client), uses plain HTTP,
+   * requires no library on the client, and works through proxies without
+   * upgrade negotiation. Perfect for progress reporting.
+   */
+  @Get(':jobId/progress')
+  streamProgress(
+    @Param('jobId') jobId: string,
+    @Res() res: Response,
+  ): void {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no'); // Disable nginx buffering
+    res.flushHeaders();
+
+    const send = (event: JobProgressEvent) => {
+      if (event.jobId !== jobId) return;
+      res.write(`data: ${JSON.stringify(event)}\n\n`);
+      if (event.status === 'complete' || event.status === 'failed') {
+        res.end();
+        this.emitter.off('analysis.progress', send);
+      }
+    };
+
+    this.emitter.on('analysis.progress', send);
+
+    // Clean up if the client disconnects
+    res.on('close', () => {
+      this.emitter.off('analysis.progress', send);
+    });
+
+    // Send an initial keepalive
+    res.write(`: keepalive\n\n`);
   }
 }

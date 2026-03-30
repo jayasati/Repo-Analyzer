@@ -67,4 +67,18 @@ describe('CycleDetectorService', () => {
     const cycles = svc.detect(edges);
     cycles.forEach(c => expect(c.nodes.length).toBeGreaterThan(1));
   });
+
+
+  it('handles a graph with 20 000 nodes in a linear chain without stack overflow', () => {
+    const N = 20_000;
+    const edges = Array.from({ length: N - 1 }, (_, i) => ({
+      from: `n${i}`,
+      to:   `n${i + 1}`,
+    }));
+    const start = performance.now();
+    const cycles = svc.detect(edges);
+    const elapsed = performance.now() - start;
+    expect(cycles).toHaveLength(0);
+    expect(elapsed).toBeLessThan(5_000); // Should complete in under 5 seconds
+  });
 });
