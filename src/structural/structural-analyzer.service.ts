@@ -4,6 +4,7 @@ import { FileNode } from '../shared/types/file-node.type';
 import { DependencyGraph, GraphEdge } from '../graph/unified-graph.types';
 import { extractImports, EXT_TO_LANGUAGE, SupportedLanguage } from './import-extractor';
 import { resolveImport } from './import-resolver';
+import { APP_CONSTANTS } from 'src/common/constants/app.constants';
 
 // All file extensions this analyzer understands — kept in sync with EXT_TO_LANGUAGE
 const SUPPORTED_EXTENSIONS = new Set(Object.keys(EXT_TO_LANGUAGE));
@@ -21,7 +22,7 @@ const TEST_PATTERNS: ReadonlyArray<(name: string) => boolean> = [
 @Injectable()
 export class StructuralAnalyzerService {
 
-  private fileCache = new Map<string, string>();
+  private readonly fileCache = new BoundedLRU(APP_CONSTANTS.MAX_CACHE_ENTRIES);
 
   analyze(fileTree: FileNode): DependencyGraph {
     const nodes = new Map<string, any>();
@@ -178,9 +179,16 @@ imports.forEach(imp => {
   }
 
   private readFileCached(filePath: string): string | null {
-    if (this.fileCache.has(filePath)) return this.fileCache.get(filePath)!;
+    const cached = this.fileCache.get(filePath);
+    if (cached !== undefined) return cached;
 
     try {
+      const stats = fs.statSync(filePath);
+      // Skip files larger than MAX_FILE_SIZE_BYTES — minified bundles,
+      // auto-generated lock files, and binary assets bloat the cache and
+      // produce zero useful import edges.
+      if (stats.size > APP_CONSTANTS.MAX_FILE_SIZE_BYTES) return null;
+
       const content = fs.readFileSync(filePath, 'utf-8');
       this.fileCache.set(filePath, content);
       return content;
@@ -204,4 +212,38 @@ private resolveJavaImport(pkg: string): string | null {
 
   return module;
 }
+}
+
+// ─── Minimal O(1) LRU implementation ──────────────────────────────────────
+
+class BoundedLRU {
+  private readonly map = new Map<string, string>();
+
+  constructor(private readonly maxSize: number) {}
+
+  get(key: string): string | undefined {
+    const val = this.map.get(key);
+    if (val === undefined) return undefined;
+    // Move to end (most-recently-used)
+    this.map.delete(key);
+    this.map.set(key, val);
+    return val;
+  }
+
+  set(key: string, value: string): void {
+    if (this.map.has(key)) this.map.delete(key);
+    else if (this.map.size >= this.maxSize) {
+      // Evict least-recently-used (first entry)
+      this.map.delete(this.map.keys().next().value!);
+    }
+    this.map.set(key, value);
+  }
+
+  has(key: string): boolean {
+    return this.map.has(key);
+  }
+
+  clear(): void {
+    this.map.clear();
+  }
 }
