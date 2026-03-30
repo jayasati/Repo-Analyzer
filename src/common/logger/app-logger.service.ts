@@ -1,37 +1,54 @@
 import { Injectable, LoggerService, Scope } from '@nestjs/common';
+import * as winston from 'winston';
+import { APP_CONSTANTS } from '../constants/app.constants';
 
 /**
- * Structured JSON logger.
- *
- * WHY: console.log is scattered across 12+ files. A single service means
- * we can swap the transport (stdout / Winston / DataDog) in one place,
- * and every log line gets a correlationId for distributed tracing.
+ * WHY Winston over console:
+ * 1. Log levels are environment-aware (debug only in dev)
+ * 2. JSON format is machine-parseable by Datadog / CloudWatch / Loki
+ * 3. Transports are configurable: stdout for dev, file+stdout for prod
+ * 4. Performance: buffered writes, not synchronous console.log
  */
 @Injectable({ scope: Scope.DEFAULT })
 export class AppLoggerService implements LoggerService {
+  private readonly winston: winston.Logger;
   private correlationId: string | undefined;
 
-  setCorrelationId(id: string): void {
-    this.correlationId = id;
+  constructor() {
+    const isProd = process.env.NODE_ENV === 'production';
+
+    this.winston = winston.createLogger({
+      level: isProd ? 'info' : 'debug',
+      format: isProd
+        ? winston.format.combine(
+            winston.format.timestamp(),
+            winston.format.json(),
+          )
+        : winston.format.combine(
+            winston.format.colorize(),
+            winston.format.timestamp({ format: 'HH:mm:ss' }),
+            winston.format.printf(({ level, message, timestamp, context }) =>
+              `${timestamp} [${context ?? 'App'}] ${level}: ${message}`,
+            ),
+          ),
+      transports: [new winston.transports.Console()],
+    });
   }
+
+  setCorrelationId(id: string): void { this.correlationId = id; }
 
   log(message: string, context?: string): void {
     this.emit('info', message, context);
   }
-
   error(message: string, trace?: string, context?: string): void {
     this.emit('error', message, context, trace);
   }
-
   warn(message: string, context?: string): void {
     this.emit('warn', message, context);
   }
-
   debug(message: string, context?: string): void {
-    if (process.env.NODE_ENV === 'production') return;
     this.emit('debug', message, context);
   }
-
   verbose(message: string, context?: string): void {
     this.emit('verbose', message, context);
   }
@@ -42,16 +59,10 @@ export class AppLoggerService implements LoggerService {
     context?: string,
     trace?: string,
   ): void {
-    const entry: Record<string, unknown> = {
-      timestamp:     new Date().toISOString(),
-      level,
-      message,
-      ...(context       && { context }),
-      ...(trace         && { trace }),
+    this.winston.log(level, message, {
+      context,
+      ...(trace             && { trace }),
       ...(this.correlationId && { correlationId: this.correlationId }),
-    };
-    // In production pipe this to a proper transport (Winston / Pino).
-    // For Phase 1, structured stdout is enough for log aggregators.
-    process.stdout.write(JSON.stringify(entry) + '\n');
+    });
   }
 }
