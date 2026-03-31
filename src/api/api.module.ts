@@ -1,9 +1,16 @@
 import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
 import { AnalyzeController } from './analyze.controller';
 import { CoreModule } from '../core/core.module';
+import { CacheModule } from '../cache/cache.module';
+import { ANALYSIS_QUEUE } from '../queue/queue.constants';
 
 @Module({
-  imports: [CoreModule],
+  imports: [
+    CoreModule,
+    CacheModule,
+    BullModule.registerQueue({ name: ANALYSIS_QUEUE }),
+  ],
   controllers: [AnalyzeController],
 })
 export class ApiModule {}

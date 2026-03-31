@@ -1,6 +1,9 @@
 import {
-  Column, CreateDateColumn, Entity,
-  Index, PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
 
 @Entity('analysis_results')
@@ -42,8 +45,8 @@ export class AnalysisResultEntity {
   @Column({ nullable: true })
   detectedLanguage?: string;
 
-  @Column({ type: 'jsonb' })
-  fullResult!: string; // JSON blob of full PipelineResult
+  @Column({ type: 'text' })
+  fullResult!: string;
 
   @CreateDateColumn()
   analyzedAt!: Date;
