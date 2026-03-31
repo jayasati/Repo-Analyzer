@@ -4,6 +4,8 @@ import { AppModule } from './app.module';
 import { GlobalExceptionFilter } from './common/filters/global-exception.filter';
 import { CorrelationIdInterceptor } from './common/interceptors/correlation-id.interceptor';
 import { AppLoggerService } from './common/logger/app-logger.service';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -53,6 +55,16 @@ async function bootstrap(): Promise<void> {
 
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
+
+  const config = new DocumentBuilder()
+  .setTitle('Repo Analyzer API')
+  .setDescription('Architecture analysis for GitHub repositories')
+  .setVersion('1.0')
+  .addTag('analysis')
+  .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api/docs', app, document);
 
   logger.log(`Application listening on port ${port}`, 'Bootstrap');
 }
