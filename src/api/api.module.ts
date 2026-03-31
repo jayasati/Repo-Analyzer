@@ -4,11 +4,13 @@ import { AnalyzeController } from './analyze.controller';
 import { CoreModule } from '../core/core.module';
 import { CacheModule } from '../cache/cache.module';
 import { ANALYSIS_QUEUE } from '../queue/queue.constants';
+import { ReportModule } from '../report/report.module';
 
 @Module({
   imports: [
     CoreModule,
     CacheModule,
+    ReportModule,
     BullModule.registerQueue({ name: ANALYSIS_QUEUE }),
   ],
   controllers: [AnalyzeController],

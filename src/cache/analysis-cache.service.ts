@@ -1,21 +1,32 @@
-import { Injectable } from '@nestjs/common';
-import { PipelineResult } from '../core/pipeline/pipeline-result.type';
 
-interface CacheEntry { result: PipelineResult; expiresAt: number; }
+import { Injectable, Inject } from '@nestjs/common';
+import { PipelineResult } from '../core/pipeline/pipeline-result.type';
+import Redis from 'ioredis';
+
+const CACHE_PREFIX = 'analysis:result:';
+const TTL_SECONDS = 3600;
 
 @Injectable()
 export class AnalysisCacheService {
-  private readonly store = new Map<string, CacheEntry>();
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {}
 
-  set(jobId: string, result: PipelineResult): void {
-    this.store.set(jobId, { result, expiresAt: Date.now() + 3_600_000 });
+  async set(jobId: string, result: PipelineResult): Promise<void> {
+    await this.redis.set(
+      `${CACHE_PREFIX}${jobId}`,
+      JSON.stringify(result),
+      'EX',
+      TTL_SECONDS,
+    );
   }
 
-  get(jobId: string): PipelineResult | null {
-    const entry = this.store.get(jobId);
-    if (!entry || Date.now() > entry.expiresAt) return null;
-    return entry.result;
+  async get(jobId: string): Promise<PipelineResult | null> {
+    const raw = await this.redis.get(`${CACHE_PREFIX}${jobId}`);
+    if (!raw) return null;
+    return JSON.parse(raw) as PipelineResult;
   }
 
-  exists(jobId: string): boolean { return this.get(jobId) !== null; }
+  async exists(jobId: string): Promise<boolean> {
+    const count = await this.redis.exists(`${CACHE_PREFIX}${jobId}`);
+    return count === 1;
+  }
 }

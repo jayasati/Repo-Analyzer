@@ -13,6 +13,10 @@ import { AnalysisCacheService } from '../cache/analysis-cache.service';
 import { AppLoggerService } from '../common/logger/app-logger.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JobProgressEvent } from '../queue/analysis-job.types';
+import { Query } from '@nestjs/common';
+import { ReportService } from '../report/report.service';
+import type { ReportFormat }  from '../report/report.types';
+import { ApiOperation } from '@nestjs/swagger';
 
 @Controller('analyze')
 @UseGuards(ThrottlerGuard)
@@ -22,6 +26,7 @@ export class AnalyzeController {
     private readonly cache:   AnalysisCacheService,
     private readonly logger:  AppLoggerService,
     private readonly emitter: EventEmitter2,
+    private readonly reports: ReportService,
   ) {}
 
   /**
@@ -98,5 +103,29 @@ export class AnalyzeController {
 
     // Send an initial keepalive
     res.write(`: keepalive\n\n`);
+  }
+
+  //---Report download endpoint ----------//
+  @Get(':jobId/report')
+  @ApiOperation({ summary: 'Download analysis report in chosen format' })
+  async downloadReport(
+    @Param('jobId') jobId: string,
+    @Query('format') format: ReportFormat = 'markdown',
+    @Res() res: Response,
+  ): Promise<void> {
+    const result = await this.cache.get(jobId);
+    if (!result) throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
+
+    const content = this.reports.generate(result, format);
+
+    const contentType = format === 'html'     ? 'text/html'
+      : format === 'markdown'                  ? 'text/markdown'
+      : 'application/json';
+
+    const ext = format === 'html' ? 'html' : format === 'markdown' ? 'md' : 'json';
+
+    res.setHeader('Content-Type', contentType);
+    res.setHeader('Content-Disposition', `attachment; filename="report-${jobId}.${ext}"`);
+    res.send(content);
   }
 }

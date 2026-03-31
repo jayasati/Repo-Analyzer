@@ -1,19 +1,34 @@
-import { IsString, IsNotEmpty, MaxLength } from 'class-validator';
-import { IsGithubUrl } from '../../common/validators/github-url.validator';
+import {
+  IsNotEmpty, IsOptional, IsString, MaxLength, Matches,
+} from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-/**
- * WHY: class-validator + class-transformer wired via ValidationPipe
- * gives us declarative input validation with helpful error messages
- * before any business logic runs.
- */
 export class AnalyzeRequestDto {
-  /**
-   * Either a full GitHub HTTPS URL or a local absolute path.
-   * GitHub URLs are validated by IsGithubUrl.
-   * Local paths are allowed only in dev/test environments.
-   */
+  @ApiProperty({
+    description: 'GitHub HTTPS URL or local absolute path',
+    example:     'https://github.com/nestjs/nest',
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(500)
   source!: string;
+
+  @ApiPropertyOptional({
+    description: 'Git branch to analyze (default: repo default branch)',
+    example:     'main',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  @Matches(/^[\w./-]+$/, { message: 'branch contains invalid characters' })
+  branch?: string;
+
+  @ApiPropertyOptional({
+    description: 'Subdirectory within the repo to analyze (e.g. "src/backend")',
+    example:     'src/backend',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  subdir?: string;
 }
