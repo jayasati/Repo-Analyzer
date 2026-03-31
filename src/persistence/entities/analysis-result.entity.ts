@@ -15,6 +15,9 @@ export class AnalysisResultEntity {
   @Column()
   repoUrl!: string;
 
+  @Column({ nullable: true })
+  userId?: string;
+
   @Column()
   projectName!: string;
 
