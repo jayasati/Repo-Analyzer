@@ -1,13 +1,32 @@
-# docker-compose.dev.yml
 version: '3.9'
+
 services:
+  postgres:
+    ports:
+      - "5432:5432"
+
   redis:
-    image: redis:7-alpine
     ports:
       - "6379:6379"
-    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
-    healthcheck:
-      test:     ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout:  3s
-      retries:  5
+
+  api:
+    build:
+      target: development
+    command: npm run start:dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3000:3000"
+
+  worker:
+    build:
+      target: development
+    command: npm run start:worker
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      NODE_ENV: development

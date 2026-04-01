@@ -9,6 +9,14 @@ import { HealthModule } from './health/health.module';
 import { LoggerModule } from './common/logger/logger.module';
 import { QueueModule }  from './queue/queue.module';
 import { APP_CONSTANTS } from './common/constants/app.constants';
+import { AuthModule }         from './auth/auth.module';
+import { HistoryModule }      from './history/history.module';
+import { NotificationModule } from './notifications/notification.module';
+import { BadgeModule }        from './badge/badge.module';
+import { WebhookModule }      from './webhooks/webhook.module';
+import { PersistenceModule }  from './persistence/persistence.module';
+import { ReportModule }       from './report/report.module';
+
 
 @Module({
   imports: [
@@ -38,6 +46,13 @@ import { APP_CONSTANTS } from './common/constants/app.constants';
     CoreModule,
     QueueModule,
     ApiModule,
+    AuthModule,
+    HistoryModule,
+    NotificationModule,
+    BadgeModule,
+    WebhookModule,
+    PersistenceModule,
+    ReportModule,
   ],
 })
 export class AppModule {}
