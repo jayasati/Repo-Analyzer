@@ -39,8 +39,14 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get current user profile' })
-  me(@Request() req: { user: AuthUserPayload }) {
-    return { id: req.user.id, email: req.user.email, role: req.user.role };
+  async me(@Request() req: { user: AuthUserPayload }) {
+    const githubLinked = await this.usersService.isGithubLinked(req.user.id);
+    return {
+      id:           req.user.id,
+      email:        req.user.email,
+      role:         req.user.role,
+      githubLinked,
+    };
   }
 
   @Get('github')
@@ -66,6 +72,18 @@ export class AuthController {
       return;
     }
     res.status(200).json({ accessToken, user });
+  }
+
+  @Get('github/repos/:owner/:repo/branches')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'List branches for a repository (uses stored GitHub token)' })
+  githubRepoBranches(
+    @Request() req: { user: AuthUserPayload },
+    @Param('owner') owner: string,
+    @Param('repo') repo: string,
+  ) {
+    return this.authService.listGithubRepoBranches(req.user.id, owner, repo);
   }
 
   @Get('github/repos')

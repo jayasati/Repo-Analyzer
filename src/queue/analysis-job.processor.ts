@@ -6,6 +6,7 @@ import { AnalysisJobData } from './analysis-job.types';
 import { AnalyzerService } from '../core/analyzer.service';
 import { AnalysisCacheService } from '../cache/analysis-cache.service';
 import { AppLoggerService } from '../common/logger/app-logger.service';
+import { HistoryService } from '../history/history.service';
 
 @Processor(ANALYSIS_QUEUE, { concurrency: QUEUE_CONCURRENCY })
 export class AnalysisJobProcessor extends WorkerHost {
@@ -14,6 +15,7 @@ export class AnalysisJobProcessor extends WorkerHost {
     private readonly cache:    AnalysisCacheService,
     private readonly logger:   AppLoggerService,
     private readonly emitter:  EventEmitter2,
+    private readonly history:  HistoryService,
   ) {
     super();
   }
@@ -35,6 +37,15 @@ export class AnalysisJobProcessor extends WorkerHost {
         : await this.analyzer.analyzeLocal(source);
 
       this.cache.set(jobId, result);
+      try {
+        await this.history.save(source, result);
+      } catch (persistErr) {
+        const msg = persistErr instanceof Error ? persistErr.message : String(persistErr);
+        this.logger.warn(
+          `Job ${jobId} history save skipped: ${msg}`,
+          'AnalysisJobProcessor',
+        );
+      }
       emit('complete', 'Analysis complete', 100);
       this.logger.log(`Job ${jobId} completed`, 'AnalysisJobProcessor');
     } catch (err) {

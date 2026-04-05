@@ -1,5 +1,5 @@
 import {
-  Injectable, UnauthorizedException,
+  ForbiddenException, Injectable, UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -45,7 +45,10 @@ export class AuthService {
     isPrivate: boolean;
     defaultBranch: string;
   }[]> {
-    const token = await this.usersService.getDecryptedGithubToken(userId);
+    const token = await this.usersService.getGithubAccessTokenIfPresent(userId);
+    if (!token) {
+      throw new ForbiddenException('GitHub account not linked');
+    }
     const repos = await this.githubApi.listUserRepos(token);
     return repos.map(r => ({
       name:          r.name,
@@ -53,6 +56,18 @@ export class AuthService {
       isPrivate:     r.private,
       defaultBranch: r.default_branch,
     }));
+  }
+
+  async listGithubRepoBranches(
+    userId: string,
+    owner:  string,
+    repo:   string,
+  ): Promise<{ name: string }[]> {
+    const token = await this.usersService.getGithubAccessTokenIfPresent(userId);
+    if (!token) {
+      throw new ForbiddenException('GitHub account not linked');
+    }
+    return this.githubApi.listBranches(token, owner, repo);
   }
 
   private toPayload(user: { id: string; email: string; role: string }): AuthUserPayload {

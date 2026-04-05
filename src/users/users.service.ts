@@ -108,6 +108,24 @@ export class UsersService {
     return this.tokenCrypto.decrypt(row.githubAccessToken);
   }
 
+  /** Returns decrypted token or null — avoids throwing when GitHub is not linked. */
+  async getGithubAccessTokenIfPresent(userId: string): Promise<string | null> {
+    const row = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { githubAccessToken: true },
+    });
+    if (!row?.githubAccessToken) return null;
+    return this.tokenCrypto.decrypt(row.githubAccessToken);
+  }
+
+  async isGithubLinked(userId: string): Promise<boolean> {
+    const row = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { githubAccessToken: true },
+    });
+    return Boolean(row?.githubAccessToken);
+  }
+
   // ── API keys ──────────────────────────────────────────────────────────────
 
   async generateApiKey(userId: string, name?: string): Promise<{ key: string; id: string }> {

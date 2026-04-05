@@ -94,6 +94,21 @@ export class GithubApiService {
   /**
    * Ensures the authenticated user is the owner of the repo (personal account ownership).
    */
+  async listBranches(
+    accessToken: string,
+    owner:       string,
+    repo:        string,
+  ): Promise<{ name: string }[]> {
+    const res = await fetch(
+      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?per_page=30`,
+      { headers: this.headers(accessToken) },
+    );
+    if (res.status === 401) throw new UnauthorizedException('GitHub token rejected');
+    if (!res.ok) return [];
+    const body = (await res.json()) as { name: string }[];
+    return body.map(b => ({ name: b.name }));
+  }
+
   async assertUserOwnsRepo(accessToken: string, fullName: string): Promise<GithubRepoDetail> {
     const slash = fullName.indexOf('/');
     if (slash < 1 || slash === fullName.length - 1) {

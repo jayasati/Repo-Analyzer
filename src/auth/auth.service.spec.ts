@@ -15,6 +15,7 @@ const mockUsersService = {
   validatePassword:         jest.fn(),
   upsertFromGithub:         jest.fn(),
   getDecryptedGithubToken:  jest.fn(),
+  getGithubAccessTokenIfPresent: jest.fn(),
 };
 
 const mockJwtService = {
@@ -85,7 +86,7 @@ describe('AuthService', () => {
   });
 
   it('listGithubReposForUser() maps API fields', async () => {
-    mockUsersService.getDecryptedGithubToken.mockResolvedValue('token');
+    mockUsersService.getGithubAccessTokenIfPresent.mockResolvedValue('token');
     mockGithubApi.listUserRepos.mockResolvedValue([
       {
         id: 1, name: 'r', full_name: 'o/r', private: true, default_branch: 'main',
