@@ -130,6 +130,8 @@ export class SmellDetectorService {
     const reported = new Set<string>();
 
     for (const { from, to } of edges) {
+      if (from === to) continue; // self-loop at package level — not a tangle
+
       const reverseKey = `${to}->${from}`;
       const pairKey    = [from, to].sort().join('<->');
 

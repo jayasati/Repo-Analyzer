@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserEntity }   from './entities/user.entity';
-import { ApiKeyEntity } from './entities/api-key.entity';
 import { UsersService } from './users.service';
+import { TokenCryptoService } from '../common/crypto/token-crypto.service';
 
 @Module({
-  imports:   [TypeOrmModule.forFeature([UserEntity, ApiKeyEntity])],
-  providers: [UsersService],
+  providers: [UsersService, TokenCryptoService],
   exports:   [UsersService],
 })
 export class UsersModule {}

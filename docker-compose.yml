@@ -1,4 +1,7 @@
-version: '3.9'
+# DB password: POSTGRES_PASSWORD is set only on the *first* start (empty postgres_data volume).
+# If you change DB_PASSWORD in .env later, Postgres still uses the old password → auth errors.
+# Fix: docker compose down -v  (wipes DB) then docker compose up --build -d
+# Ensure project .env DB_PASSWORD matches DATABASE_URL / compose substitution.
 
 services:
 
@@ -48,6 +51,11 @@ services:
       NODE_ENV:   production
       DB_HOST:    postgres
       DB_PORT:    "5432"
+      DB_USER:    ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-JAY123456}
+      DB_NAME:    ${DB_NAME:-repo_analyzer}
+      # Overrides .env localhost URL — inside Docker the DB host must be the service name
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-JAY123456}@postgres:5432/${DB_NAME:-repo_analyzer}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     ports:
@@ -71,6 +79,10 @@ services:
       NODE_ENV:   production
       DB_HOST:    postgres
       DB_PORT:    "5432"
+      DB_USER:    ${DB_USER:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-JAY123456}
+      DB_NAME:    ${DB_NAME:-repo_analyzer}
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-JAY123456}@postgres:5432/${DB_NAME:-repo_analyzer}
       REDIS_HOST: redis
       REDIS_PORT: "6379"
     depends_on:

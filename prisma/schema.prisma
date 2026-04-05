@@ -1,0 +1,57 @@
+// Repository analyzer — users, API keys, and linked GitHub repos (Prisma).
+// Set DATABASE_URL, e.g. postgresql://USER:PASSWORD@HOST:5432/repo_analyzer
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// Application user. `password` maps to legacy column `passwordHash` (bcrypt); null for GitHub-only users.
+/// `githubAccessToken` stores AES-256-GCM ciphertext (never send to clients).
+model User {
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email              String    @unique
+  password           String?   @map("passwordHash")
+  role               String    @default("user")
+  githubId           String?   @unique
+  githubAccessToken  String?   @map("githubAccessToken")
+  createdAt          DateTime  @default(now()) @map("createdAt")
+  updatedAt          DateTime  @updatedAt @map("updatedAt")
+
+  apiKeys ApiKey[]
+  repos   Repo[]
+
+  @@map("users")
+}
+
+model ApiKey {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  keyHash   String   @unique @map("keyHash")
+  prefix    String   @map("prefix")
+  name      String?  @map("name")
+  active    Boolean  @default(true) @map("active")
+  userId    String   @map("userId") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("createdAt")
+
+  @@map("api_keys")
+}
+
+model Repo {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name         String
+  fullName     String
+  private      Boolean
+  githubRepoId BigInt?  @map("githubRepoId")
+  ownerId      String   @map("ownerId") @db.Uuid
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now()) @map("createdAt")
+  updatedAt    DateTime @updatedAt @map("updatedAt")
+
+  @@unique([ownerId, fullName])
+  @@map("repos")
+}

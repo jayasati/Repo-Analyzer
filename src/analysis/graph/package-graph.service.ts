@@ -67,7 +67,7 @@ const JAVA_STYLE_EXTS = new Set([
 @Injectable()
 export class PackageGraphService {
 
- build(graph: UnifiedGraph): PackageEdge[] {
+  build(graph: UnifiedGraph): PackageEdge[] {
     const edges: PackageEdge[] = [];
     const seen  = new Set<string>();
 
@@ -75,18 +75,15 @@ export class PackageGraphService {
       const fromPkg = this.extractTopLevelPackage(edge.from);
       let toPkg = this.extractTopLevelPackage(edge.to);
 
-// If extractor fails but edge.to is already a module name,
-// use it directly
-if (!toPkg && !edge.to.includes('/')) {
-  toPkg = edge.to;
-}
-        console.log("EDGE:", edge.from, "→", edge.to);
-        console.log("PKG:", fromPkg, "→", toPkg);
-      // Files that live directly at root/src level with no sub-package
+      // If extractor fails but edge.to is already a module name, use it directly
+      if (!toPkg && !edge.to.includes('/')) {
+        toPkg = edge.to;
+      }
+
       if (!fromPkg || !toPkg) continue;
 
-    // Skip only trivial self loops
-    if (fromPkg === toPkg && edge.from === edge.to) continue;
+      // Same top-level package: in-package imports are not package-level edges.
+      if (fromPkg === toPkg) continue;
 
       const key = `${fromPkg}->${toPkg}`;
       if (seen.has(key)) continue;

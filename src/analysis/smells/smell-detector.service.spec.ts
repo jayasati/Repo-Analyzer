@@ -42,6 +42,12 @@ describe('SmellDetectorService', () => {
       const tangles = svc.detect(edges).filter(s => s.type === 'package-tangle');
       expect(tangles).toHaveLength(1);
     });
+
+    it('ignores package self-loops (same module twice) — not a bidirectional tangle', () => {
+      const edges = [{ from: 'common', to: 'common' }];
+      const tangles = svc.detect(edges).filter(s => s.type === 'package-tangle');
+      expect(tangles).toHaveLength(0);
+    });
   });
 
   describe('unstable-abstraction', () => {
