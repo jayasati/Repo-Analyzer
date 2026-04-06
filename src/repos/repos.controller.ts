@@ -1,4 +1,12 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Request, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpCode,
+  HttpStatus,
+  Post,
+  Request,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import type { AuthUserPayload } from '../users/users.types';
@@ -15,12 +23,10 @@ export class ReposController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiBearerAuth()
   @ApiOperation({
-    summary: 'Validate GitHub ownership and enqueue analysis (stub uses existing analysis worker)',
+    summary:
+      'Validate GitHub ownership and enqueue analysis (stub uses existing analysis worker)',
   })
-  scan(
-    @Request() req: { user: AuthUserPayload },
-    @Body() dto: ScanRepoDto,
-  ) {
+  scan(@Request() req: { user: AuthUserPayload }, @Body() dto: ScanRepoDto) {
     return this.repos.queueScan(req.user.id, dto.repo);
   }
 }

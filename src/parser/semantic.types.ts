@@ -11,11 +11,9 @@ export interface SemanticImport {
 }
 
 export interface SemanticResult {
-
   classes: SemanticClass[];
 
   functions: SemanticFunction[];
 
   imports: SemanticImport[];
-
 }

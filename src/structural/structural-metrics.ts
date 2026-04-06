@@ -1,15 +1,13 @@
 import { DependencyGraph } from '../graph/unified-graph.types';
 
-export function computeStructuralMetrics(
-  graph: DependencyGraph
-) {
+export function computeStructuralMetrics(graph: DependencyGraph) {
   const fileCount = graph.nodes.length;
   const dependencyCount = graph.edges.length;
 
   const fanOut: Record<string, number> = {};
 
   //e => is an edge (dependency) in the graph
-  graph.edges.forEach(e => {
+  graph.edges.forEach((e) => {
     fanOut[e.from] = (fanOut[e.from] || 0) + 1;
   });
 

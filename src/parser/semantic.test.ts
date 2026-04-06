@@ -1,10 +1,10 @@
-import { TreeSitterParserService } from "./tree-sitter-parser.service";
-import { TreeSitterSemanticService } from "./tree-sitter-semantic.service";
+import { TreeSitterParserService } from './tree-sitter-parser.service';
+import { TreeSitterSemanticService } from './tree-sitter-semantic.service';
 
 const parser = new TreeSitterParserService();
 const semantic = new TreeSitterSemanticService();
 
-parser.setLanguage("typescript");
+parser.setLanguage('typescript');
 
 const code = `
 import { UserService } from "./user.service";

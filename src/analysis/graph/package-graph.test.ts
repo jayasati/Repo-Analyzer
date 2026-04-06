@@ -1,6 +1,6 @@
-import { LocalScannerService } from "../../input/local/local-scanner.service";
-import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
-import { PackageGraphService } from "./package-graph.service";
+import { LocalScannerService } from '../../input/local/local-scanner.service';
+import { StructuralAnalyzerService } from '../../structural/structural-analyzer.service';
+import { PackageGraphService } from './package-graph.service';
 
 const scanner = new LocalScannerService();
 const analyzer = new StructuralAnalyzerService();
@@ -11,5 +11,5 @@ const graph = analyzer.analyze(tree);
 
 const packages = packageGraph.build(graph);
 
-console.log("===== PACKAGE DEPENDENCIES =====");
+console.log('===== PACKAGE DEPENDENCIES =====');
 console.log(packages);

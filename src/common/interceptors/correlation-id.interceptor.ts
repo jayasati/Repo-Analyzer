@@ -1,5 +1,8 @@
 import {
-  CallHandler, ExecutionContext, Injectable, NestInterceptor,
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap } from 'rxjs/operators';
@@ -12,7 +15,7 @@ export class CorrelationIdInterceptor implements NestInterceptor {
   constructor(private readonly logger: AppLoggerService) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req  = ctx.switchToHttp().getRequest<Request>();
+    const req = ctx.switchToHttp().getRequest<Request>();
     const resp = ctx.switchToHttp().getResponse<Response>();
 
     const id = (req.headers['x-correlation-id'] as string) ?? randomUUID();

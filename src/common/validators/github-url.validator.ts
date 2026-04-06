@@ -1,5 +1,7 @@
 import {
-  registerDecorator, ValidationOptions, ValidatorConstraint,
+  registerDecorator,
+  ValidationOptions,
+  ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
 import { APP_CONSTANTS } from '../constants/app.constants';
@@ -11,26 +13,26 @@ import { APP_CONSTANTS } from '../constants/app.constants';
  */
 @ValidatorConstraint({ async: false })
 export class IsGithubUrlConstraint implements ValidatorConstraintInterface {
-    validate(url: string): boolean {
-        if (!url) return false;
+  validate(url: string): boolean {
+    if (!url) return false;
 
-        if (!url.startsWith('https://')) return false;
+    if (!url.startsWith('https://')) return false;
 
-        try {
-            const parsed = new URL(url);
+    try {
+      const parsed = new URL(url);
 
-            // Only allow github.com
-            if (parsed.hostname !== 'github.com') return false;
+      // Only allow github.com
+      if (parsed.hostname !== 'github.com') return false;
 
-            // Block IP literals (extra safety)
-            if (/^\d+\.\d+\.\d+\.\d+$/.test(parsed.hostname)) return false;
+      // Block IP literals (extra safety)
+      if (/^\d+\.\d+\.\d+\.\d+$/.test(parsed.hostname)) return false;
 
-            // Must match owner/repo pattern
-            return APP_CONSTANTS.GITHUB_URL_REGEX.test(url.split('?')[0]);
-        } catch {
-            return false;
-        }
+      // Must match owner/repo pattern
+      return APP_CONSTANTS.GITHUB_URL_REGEX.test(url.split('?')[0]);
+    } catch {
+      return false;
     }
+  }
 
   defaultMessage(): string {
     return 'source must be a valid GitHub HTTPS URL (https://github.com/owner/repo)';
@@ -40,11 +42,11 @@ export class IsGithubUrlConstraint implements ValidatorConstraintInterface {
 export function IsGithubUrl(opts?: ValidationOptions) {
   return function (object: object, propertyName: string): void {
     registerDecorator({
-      target:         object.constructor,
+      target: object.constructor,
       propertyName,
-      options:        opts,
-      constraints:    [],
-      validator:      IsGithubUrlConstraint,
+      options: opts,
+      constraints: [],
+      validator: IsGithubUrlConstraint,
     });
   };
 }

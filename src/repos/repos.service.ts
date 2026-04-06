@@ -19,7 +19,10 @@ export class ReposService {
     private readonly logger: AppLoggerService,
   ) {}
 
-  async queueScan(userId: string, repoInput: string): Promise<{
+  async queueScan(
+    userId: string,
+    repoInput: string,
+  ): Promise<{
     jobId: string;
     status: ScanJobStatus;
     fullName: string;
@@ -37,12 +40,15 @@ export class ReposService {
       {
         jobId,
         removeOnComplete: { count: 100 },
-        removeOnFail:     { count: 50 },
-        attempts:         1,
+        removeOnFail: { count: 50 },
+        attempts: 1,
       },
     );
 
-    this.logger.log(`Scan queued for ${fullName} (job ${jobId})`, 'ReposService');
+    this.logger.log(
+      `Scan queued for ${fullName} (job ${jobId})`,
+      'ReposService',
+    );
 
     return { jobId, status: 'queued', fullName: detail.full_name };
   }

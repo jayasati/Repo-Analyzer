@@ -23,8 +23,8 @@ export class BadgeController {
   @ApiOperation({ summary: 'Get SVG score badge for a repository' })
   async getBadge(
     @Param('owner') owner: string,
-    @Param('repo')  repo:  string,
-    @Res()          res:   Response,
+    @Param('repo') repo: string,
+    @Res() res: Response,
   ): Promise<void> {
     const repoUrl = `https://github.com/${owner}/${repo}`;
 
@@ -35,10 +35,14 @@ export class BadgeController {
     });
 
     const score = latest?.overallScore ?? null;
-    const color = score === null ? '9f9f9f'
-      : score >= 80 ? '22c55e'
-      : score >= 60 ? 'f59e0b'
-      : 'ef4444';
+    const color =
+      score === null
+        ? '9f9f9f'
+        : score >= 80
+          ? '22c55e'
+          : score >= 60
+            ? 'f59e0b'
+            : 'ef4444';
 
     const label = score === null ? 'not analyzed' : `${score}/100`;
 
@@ -49,8 +53,12 @@ export class BadgeController {
     res.send(svg);
   }
 
-  private generateBadgeSvg(leftText: string, rightText: string, rightColor: string): string {
-    const leftW  = leftText.length  * 6.5 + 10;
+  private generateBadgeSvg(
+    leftText: string,
+    rightText: string,
+    rightColor: string,
+  ): string {
+    const leftW = leftText.length * 6.5 + 10;
     const rightW = rightText.length * 6.5 + 10;
     const totalW = leftW + rightW;
 

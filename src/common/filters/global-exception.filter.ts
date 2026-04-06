@@ -1,6 +1,9 @@
 import {
-  ArgumentsHost, Catch, ExceptionFilter,
-  HttpException, HttpStatus,
+  ArgumentsHost,
+  Catch,
+  ExceptionFilter,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { AppLoggerService } from '../logger/app-logger.service';
@@ -14,9 +17,9 @@ export class GlobalExceptionFilter implements ExceptionFilter {
   constructor(private readonly logger: AppLoggerService) {}
 
   catch(exception: unknown, host: ArgumentsHost): void {
-    const ctx    = host.switchToHttp();
-    const req    = ctx.getRequest<Request>();
-    const res    = ctx.getResponse<Response>();
+    const ctx = host.switchToHttp();
+    const req = ctx.getRequest<Request>();
+    const res = ctx.getResponse<Response>();
 
     const status =
       exception instanceof HttpException
@@ -25,8 +28,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
 
     const message =
       exception instanceof HttpException
-        ? (exception.getResponse() as { message?: string }).message ??
-          exception.message
+        ? ((exception.getResponse() as { message?: string }).message ??
+          exception.message)
         : 'Internal server error';
 
     // Log full stack only server-side, never send it to clients
@@ -41,8 +44,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     res.status(status).json({
       statusCode: status,
       message,
-      path:       req.url,
-      timestamp:  new Date().toISOString(),
+      path: req.url,
+      timestamp: new Date().toISOString(),
     });
   }
 }

@@ -16,6 +16,8 @@ export interface CopilotResponse {
   answer: string;
   evidence: string[];
   mentions: string[];
+  confidence: 'high' | 'medium' | 'low';
+  issues?: string[];
 }
 
 const openai = new OpenAI({
@@ -24,44 +26,71 @@ const openai = new OpenAI({
 
 @Injectable()
 export class CopilotService {
-
   async ask(
     result: PipelineResult,
     query: CopilotQuery,
   ): Promise<CopilotResponse> {
     const context = this.buildContext(result);
-    const prompt  = this.buildPrompt(query.question, context);
-    const raw     = await this.callOpenAI(prompt);
+
+    // 🧩 STEP 1 — PLANNER
+    const plannerOutput = await this.callLLM(
+      this.buildPlannerPrompt(query.question, context),
+    );
+
+    // 🧩 STEP 2 — ANALYZER
+    const analyzerOutput = await this.callLLM(
+      this.buildAnalyzerPrompt(query.question, context, plannerOutput),
+    );
+
+    // 🧩 STEP 3 — VALIDATOR
+    const validatorOutput = await this.callLLM(
+      this.buildValidatorPrompt(context, plannerOutput, analyzerOutput),
+    );
 
     return {
       question: query.question,
-      answer: raw.answer,
-      evidence: raw.evidence,
-      mentions: this.extractMentions(raw.answer, result),
+      answer: validatorOutput.validated_answer,
+      evidence: analyzerOutput.evidence || [],
+      mentions: this.extractMentions(
+        validatorOutput.validated_answer,
+        result,
+      ),
+      confidence: validatorOutput.confidence,
+      issues: validatorOutput.issues_found || [],
     };
   }
 
-  // ── Context builder (UNCHANGED) ───────────────────────────────────────────
+  // ── CONTEXT BUILDER (UNCHANGED) ───────────────────────────────────────────
   private buildContext(r: PipelineResult): string {
-    const smellLines = r.smells.map(
-      s => `  - [${s.severity.toUpperCase()}] ${s.type}: ${s.message}`
-    ).join('\n') || '  none';
+    const smellLines =
+      r.smells
+        .map((s) => `  - [${s.severity.toUpperCase()}] ${s.type}: ${s.message}`)
+        .join('\n') || '  none';
 
-    const cycleLines = r.cycles.map(
-      c => `  - ${c.nodes.join(' → ')}`
-    ).join('\n') || '  none';
+    const cycleLines =
+      r.cycles.map((c) => `  - ${c.nodes.join(' → ')}`).join('\n') ||
+      '  none';
 
-    const hotspotLines = r.hotspots.slice(0, 8).map(
-      h => `  - ${h.module} (risk: ${h.risk}, fan-out: ${h.fanOut})`
-    ).join('\n') || '  none';
+    const hotspotLines =
+      r.hotspots
+        .slice(0, 8)
+        .map(
+          (h) =>
+            `  - ${h.module} (risk: ${h.risk}, fan-out: ${h.fanOut})`,
+        )
+        .join('\n') || '  none';
 
     const baselineLine = r.baseline[0]
-      ? `${r.baseline[0].name} (${Math.round(r.baseline[0].similarity * 100)}% match)`
+      ? `${r.baseline[0].name} (${Math.round(
+          r.baseline[0].similarity * 100,
+        )}% match)`
       : 'unknown';
 
     return `
 PROJECT: ${r.projectName}
-LANGUAGE: ${r.detection.languages[0]?.name ?? 'unknown'} | FRAMEWORK: ${r.detection.framework ?? 'none'} | ORM: ${r.detection.orm ?? 'none'}
+LANGUAGE: ${r.detection.languages[0]?.name ?? 'unknown'} | FRAMEWORK: ${
+      r.detection.framework ?? 'none'
+    } | ORM: ${r.detection.orm ?? 'none'}
 
 ARCHITECTURE SCORE: ${r.score.overall}/100
   Modularity:  ${r.score.breakdown.modularity}
@@ -69,11 +98,19 @@ ARCHITECTURE SCORE: ${r.score.overall}/100
   Smells:      ${r.score.breakdown.smells}
 
 METRICS:
-  Modules: ${r.metrics.moduleCount} | Dependencies: ${r.metrics.dependencyCount}
-  Avg Fan-In: ${r.metrics.averageFanIn} | Avg Fan-Out: ${r.metrics.averageFanOut}
-  Max Fan-Out: ${r.metrics.maxFanOut} | Density: ${(r.metrics.dependencyDensity * 100).toFixed(1)}%
+  Modules: ${r.metrics.moduleCount} | Dependencies: ${
+      r.metrics.dependencyCount
+    }
+  Avg Fan-In: ${r.metrics.averageFanIn} | Avg Fan-Out: ${
+      r.metrics.averageFanOut
+    }
+  Max Fan-Out: ${r.metrics.maxFanOut} | Density: ${(
+      r.metrics.dependencyDensity * 100
+    ).toFixed(1)}%
 
-HEALTH: Strengths: [${r.health.strengths.join(', ')}] | Weaknesses: [${r.health.weaknesses.join(', ')}]
+HEALTH: Strengths: [${r.health.strengths.join(
+      ', ',
+    )}] | Weaknesses: [${r.health.weaknesses.join(', ')}]
 
 ARCHITECTURE SMELLS (${r.smells.length}):
 ${smellLines}
@@ -88,44 +125,125 @@ CLOSEST ARCHITECTURE PATTERN: ${baselineLine}
 `.trim();
   }
 
-  // ── Prompt builder (UNCHANGED) ───────────────────────────────────────────
-  private buildPrompt(question: string, context: string): string {
-    return `You are an expert software architect reviewing a codebase. You have been given detailed static analysis results below. Answer the architect's question based ONLY on the data provided. Be specific, cite actual module names and metrics, and give actionable advice.
-
-Always structure your response as valid JSON with this shape:
-{
-  "answer": "<your detailed answer in 2-4 paragraphs>",
-  "evidence": ["<fact 1 from the data>", "<fact 2>", "<fact 3>"]
-}
+  // ── 🧩 STEP 1: PLANNER PROMPT ─────────────────────────────────────────────
+  private buildPlannerPrompt(question: string, context: string): string {
+    return `
+You are a PRINCIPAL SOFTWARE ARCHITECT acting as a PLANNER.
 
 ANALYSIS DATA:
 ${context}
 
-ARCHITECT'S QUESTION:
+QUESTION:
 ${question}
 
-Respond ONLY with the JSON object, no markdown fences.`;
+TASK:
+1. Extract modules
+2. Extract signals (metrics, smells, hotspots, cycles)
+3. Identify focus areas
+4. Detect missing data
+
+OUTPUT JSON:
+{
+  "modules": [],
+  "signals": {
+    "metrics": [],
+    "smells": [],
+    "hotspots": [],
+    "cycles": []
+  },
+  "focus_areas": [],
+  "missing_data": []
+}
+
+ONLY JSON.
+`;
   }
 
-  // ── OpenAI API call (NEW) ────────────────────────────────────────────────
+  // ── 🧩 STEP 2: ANALYZER PROMPT ────────────────────────────────────────────
+  private buildAnalyzerPrompt(
+    question: string,
+    context: string,
+    planner: any,
+  ): string {
+    return `
+You are a PRINCIPAL SOFTWARE ARCHITECT performing deep analysis.
 
-  private async callOpenAI(
-    prompt: string
-  ): Promise<{ answer: string; evidence: string[] }> {
+ANALYSIS DATA:
+${context}
 
+PLANNER OUTPUT:
+${JSON.stringify(planner)}
+
+QUESTION:
+${question}
+
+TASK:
+- Structural analysis
+- Risk mapping
+- Assumptions
+- Recommendations
+
+OUTPUT JSON:
+{
+  "answer": "",
+  "evidence": [],
+  "assumptions": []
+}
+
+ONLY JSON.
+`;
+  }
+
+  // ── 🧩 STEP 3: VALIDATOR PROMPT ───────────────────────────────────────────
+  private buildValidatorPrompt(
+    context: string,
+    planner: any,
+    analyzer: any,
+  ): string {
+    return `
+You are a PRINCIPAL SOFTWARE ARCHITECT acting as a VALIDATOR.
+
+ANALYSIS DATA:
+${context}
+
+PLANNER OUTPUT:
+${JSON.stringify(planner)}
+
+ANALYZER OUTPUT:
+${JSON.stringify(analyzer)}
+
+TASK:
+- Verify evidence
+- Detect hallucinations
+- Assign confidence
+
+OUTPUT JSON:
+{
+  "validated_answer": "",
+  "issues_found": [],
+  "confidence": "high | medium | low"
+}
+
+ONLY JSON.
+`;
+  }
+
+  // ── LLM CALL ──────────────────────────────────────────────────────────────
+  private async callLLM(prompt: string): Promise<any> {
     const response = await openai.chat.completions.create({
-      model: 'gpt-5-mini', // fast + cheap + strong
-      temperature: 0.2,
-      response_format: { type: "json_object" },
+      model: 'gpt-5-mini',
+      temperature: 0,
+      response_format: { type: 'json_object' },
       messages: [
         {
           role: 'system',
-          content: 'You are a senior software architect. Always respond in strict JSON format.'
+          content:
+            'You are a strict JSON generator. Never output anything except JSON.',
         },
         {
           role: 'user',
-          content: prompt
-        }
+          content: prompt,
+        },
       ],
     });
 
@@ -134,30 +252,30 @@ Respond ONLY with the JSON object, no markdown fences.`;
     try {
       return JSON.parse(text);
     } catch {
-      return { answer: text, evidence: [] };
+      return {};
     }
   }
 
-  // ── Extract module mentions (UNCHANGED) ──────────────────────────────────
+  // ── MODULE MENTION EXTRACTION ─────────────────────────────────────────────
   private extractMentions(answer: string, result: PipelineResult): string[] {
     const moduleNames = [
-      ...result.hotspots.map(h => h.module),
-      ...result.smells.map(s => s.module).filter(Boolean),
+      ...result.hotspots.map((h) => h.module),
+      ...result.smells.map((s) => s.module).filter(Boolean),
     ] as string[];
 
-    return moduleNames.filter(m =>
-      answer.toLowerCase().includes(m.toLowerCase())
+    return moduleNames.filter((m) =>
+      answer.toLowerCase().includes(m.toLowerCase()),
     );
   }
-
 }
 
+// ── PREDEFINED QUERIES ──────────────────────────────────────────────────────
 export const PREDEFINED_QUERIES = [
-  { id: 'scale',     label: 'Why is my system hard to scale?' },
-  { id: 'cycles',    label: 'Explain my circular dependencies' },
-  { id: 'hotspots',  label: 'What are my riskiest modules?' },
-  { id: 'clean',     label: 'Am I violating clean architecture principles?' },
-  { id: 'coupling',  label: 'Which modules should I decouple first?' },
-  { id: 'overview',  label: 'Give me a plain-English overview of this codebase' },
-  { id: 'next',      label: 'What should I refactor first?' },
+  { id: 'scale', label: 'Why is my system hard to scale?' },
+  { id: 'cycles', label: 'Explain my circular dependencies' },
+  { id: 'hotspots', label: 'What are my riskiest modules?' },
+  { id: 'clean', label: 'Am I violating clean architecture principles?' },
+  { id: 'coupling', label: 'Which modules should I decouple first?' },
+  { id: 'overview', label: 'Give me a plain-English overview' },
+  { id: 'next', label: 'What should I refactor first?' },
 ];

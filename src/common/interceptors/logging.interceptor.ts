@@ -1,5 +1,8 @@
 import {
-  CallHandler, ExecutionContext, Injectable, NestInterceptor,
+  CallHandler,
+  ExecutionContext,
+  Injectable,
+  NestInterceptor,
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { tap, catchError } from 'rxjs/operators';
@@ -16,7 +19,9 @@ export class LoggingInterceptor implements NestInterceptor {
   constructor(private readonly logger: AppLoggerService) {}
 
   intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
-    const req   = ctx.switchToHttp().getRequest<{ method: string; url: string }>();
+    const req = ctx
+      .switchToHttp()
+      .getRequest<{ method: string; url: string }>();
     const start = Date.now();
     const label = `${req.method} ${req.url}`;
 
@@ -26,7 +31,7 @@ export class LoggingInterceptor implements NestInterceptor {
       tap(() => {
         this.logger.log(`← ${label} ${Date.now() - start}ms`, 'HTTP');
       }),
-      catchError(err => {
+      catchError((err) => {
         this.logger.error(
           `✗ ${label} ${Date.now() - start}ms`,
           err instanceof Error ? err.stack : String(err),

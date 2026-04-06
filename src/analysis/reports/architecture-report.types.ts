@@ -1,8 +1,7 @@
-import { ArchitectureScore } from "../scoring/architecture-score.types";
-import { ArchitectureSmell } from "../smells/smell.types";
-import { ArchitectureRecommendation } from "./recommend/recommendation.types";
+import { ArchitectureScore } from '../scoring/architecture-score.types';
+import { ArchitectureSmell } from '../smells/smell.types';
+import { ArchitectureRecommendation } from './recommend/recommendation.types';
 export interface ArchitectureReport {
-
   projectName: string;
 
   modules: string[];
@@ -14,5 +13,4 @@ export interface ArchitectureReport {
   cycles: { nodes: string[] }[];
 
   recommendations: ArchitectureRecommendation[];
-
 }

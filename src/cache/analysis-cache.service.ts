@@ -1,4 +1,3 @@
-
 import { Injectable, Inject } from '@nestjs/common';
 import { PipelineResult } from '../core/pipeline/pipeline-result.type';
 import Redis from 'ioredis';

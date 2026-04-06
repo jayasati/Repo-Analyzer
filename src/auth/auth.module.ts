@@ -15,12 +15,12 @@ import { GithubModule } from '../github/github.module';
     GithubModule,
     PassportModule,
     JwtModule.register({
-      secret:      process.env.JWT_SECRET ?? 'change-me-in-production',
+      secret: process.env.JWT_SECRET ?? 'change-me-in-production',
       signOptions: { expiresIn: '7d' },
     }),
   ],
-  providers:   [AuthService, JwtStrategy, ApiKeyStrategy, GithubStrategy],
+  providers: [AuthService, JwtStrategy, ApiKeyStrategy, GithubStrategy],
   controllers: [AuthController],
-  exports:     [AuthService, JwtModule],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

@@ -1,6 +1,15 @@
 import {
-  Body, Controller, Delete, Get,
-  HttpCode, HttpStatus, Param, Post, Request, Res, UseGuards,
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Request,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ApiOperation, ApiTags, ApiBearerAuth } from '@nestjs/swagger';
@@ -42,9 +51,9 @@ export class AuthController {
   async me(@Request() req: { user: AuthUserPayload }) {
     const githubLinked = await this.usersService.isGithubLinked(req.user.id);
     return {
-      id:           req.user.id,
-      email:        req.user.email,
-      role:         req.user.role,
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
       githubLinked,
     };
   }
@@ -63,7 +72,9 @@ export class AuthController {
     @Request() req: { user: GithubValidatedUser },
     @Res() res: Response,
   ): Promise<void> {
-    const { accessToken, user } = await this.authService.completeGithubLogin(req.user);
+    const { accessToken, user } = await this.authService.completeGithubLogin(
+      req.user,
+    );
     const redirectBase = process.env.GITHUB_OAUTH_SUCCESS_URL;
     if (redirectBase) {
       const url = new URL(redirectBase);
@@ -77,7 +88,9 @@ export class AuthController {
   @Get('github/repos/:owner/:repo/branches')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List branches for a repository (uses stored GitHub token)' })
+  @ApiOperation({
+    summary: 'List branches for a repository (uses stored GitHub token)',
+  })
   githubRepoBranches(
     @Request() req: { user: AuthUserPayload },
     @Param('owner') owner: string,
@@ -89,7 +102,10 @@ export class AuthController {
   @Get('github/repos')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'List GitHub repositories for the linked account (server-side token)' })
+  @ApiOperation({
+    summary:
+      'List GitHub repositories for the linked account (server-side token)',
+  })
   githubRepos(@Request() req: { user: AuthUserPayload }) {
     return this.authService.listGithubReposForUser(req.user.id);
   }
@@ -117,10 +133,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Revoke an API key' })
-  revokeKey(
-    @Param('id') id: string,
-    @Request() req: { user: { id: string } },
-  ) {
+  revokeKey(@Param('id') id: string, @Request() req: { user: { id: string } }) {
     return this.usersService.revokeApiKey(id, req.user.id);
   }
 }

@@ -1,13 +1,17 @@
 import { Injectable } from '@nestjs/common';
 
-import { UnifiedGraph, GraphNode, GraphEdge, NodeType } from './unified-graph.types';
+import {
+  UnifiedGraph,
+  GraphNode,
+  GraphEdge,
+  NodeType,
+} from './unified-graph.types';
 
 @Injectable()
 export class GraphMergeService {
-
   merge(
     structural: { nodes: { id: string; type: string }[]; edges: GraphEdge[] },
-    semantic:   { nodes: { id: string; type: string }[]; edges: GraphEdge[] },
+    semantic: { nodes: { id: string; type: string }[]; edges: GraphEdge[] },
   ): UnifiedGraph {
     const nodeMap = new Map<string, GraphNode>();
 
@@ -15,8 +19,8 @@ export class GraphMergeService {
     // override them when the same id is resolved by both analyzers.
     for (const node of structural.nodes) {
       nodeMap.set(node.id, {
-        id:     node.id,
-        type:   'file',
+        id: node.id,
+        type: 'file',
         source: 'structural',
       });
     }
@@ -25,8 +29,8 @@ export class GraphMergeService {
     // and take precedence over the generic 'file' type assigned above.
     for (const node of semantic.nodes) {
       nodeMap.set(node.id, {
-        id:     node.id,
-        type:   node.type as NodeType,   // NodeType union includes 'unknown' as a valid fallback
+        id: node.id,
+        type: node.type as NodeType, // NodeType union includes 'unknown' as a valid fallback
         source: 'semantic',
       });
     }

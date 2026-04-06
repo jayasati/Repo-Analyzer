@@ -11,34 +11,49 @@ export class PersistenceService {
     private readonly repo: Repository<AnalysisResultEntity>,
   ) {}
 
-  async save(repoUrl: string, result: PipelineResult): Promise<AnalysisResultEntity> {
+  async save(
+    repoUrl: string,
+    result: PipelineResult,
+  ): Promise<AnalysisResultEntity> {
     const entity = this.repo.create({
       repoUrl,
-      projectName:       result.projectName,
-      overallScore:      result.score.overall,
-      modularityScore:   result.score.breakdown.modularity,
-      couplingScore:     result.score.breakdown.coupling,
-      smellsScore:       result.score.breakdown.smells,
-      cycleCount:        result.cycles.length,
-      smellCount:        result.smells.length,
-      moduleCount:       result.metrics.moduleCount,
+      projectName: result.projectName,
+      overallScore: result.score.overall,
+      modularityScore: result.score.breakdown.modularity,
+      couplingScore: result.score.breakdown.coupling,
+      smellsScore: result.score.breakdown.smells,
+      cycleCount: result.cycles.length,
+      smellCount: result.smells.length,
+      moduleCount: result.metrics.moduleCount,
       detectedFramework: result.detection.framework,
-      detectedLanguage:  result.detection.languages[0]?.name,
-      fullResult:        JSON.stringify(result),
+      detectedLanguage: result.detection.languages[0]?.name,
+      fullResult: JSON.stringify(result),
     });
     return this.repo.save(entity);
   }
 
-  async getHistory(repoUrl: string, limit = 10): Promise<AnalysisResultEntity[]> {
+  async getHistory(
+    repoUrl: string,
+    limit = 10,
+  ): Promise<AnalysisResultEntity[]> {
     return this.repo.find({
-      where:  { repoUrl },
-      order:  { analyzedAt: 'DESC' },
-      take:   limit,
+      where: { repoUrl },
+      order: { analyzedAt: 'DESC' },
+      take: limit,
       select: [
-        'id', 'repoUrl', 'projectName', 'overallScore',
-        'modularityScore', 'couplingScore', 'smellsScore',
-        'cycleCount', 'smellCount', 'moduleCount',
-        'detectedFramework', 'detectedLanguage', 'analyzedAt',
+        'id',
+        'repoUrl',
+        'projectName',
+        'overallScore',
+        'modularityScore',
+        'couplingScore',
+        'smellsScore',
+        'cycleCount',
+        'smellCount',
+        'moduleCount',
+        'detectedFramework',
+        'detectedLanguage',
+        'analyzedAt',
       ],
     });
   }

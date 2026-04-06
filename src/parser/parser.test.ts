@@ -1,8 +1,8 @@
-import { TreeSitterParserService } from "./tree-sitter-parser.service";
+import { TreeSitterParserService } from './tree-sitter-parser.service';
 
 const parser = new TreeSitterParserService();
 
-parser.setLanguage("typescript");
+parser.setLanguage('typescript');
 
 const tree = parser.parse(`
 class UserService {

@@ -1,7 +1,7 @@
 export type AnalysisDepth = 'framework' | 'structural';
 
 export interface DetectedLanguage {
-  name:       string;
+  name: string;
   confidence: number; // 0 → 1
 }
 
@@ -10,32 +10,56 @@ export interface DetectedLanguage {
 // without creating a circular dependency through language-detector.service.ts.
 
 export type DetectedFramework =
-  | 'nestjs' | 'nextjs' | 'angular' | 'express' | 'fastify' | 'koa'
-  | 'django' | 'flask' | 'fastapi'
-  | 'spring' | 'micronaut' | 'ktor'
-  | 'gin' | 'fiber' | 'echo'
-  | 'rails' | 'sinatra'
-  | 'laravel' | 'symfony'
-  | 'actix' | 'axum' | 'rocket'
+  | 'nestjs'
+  | 'nextjs'
+  | 'angular'
+  | 'express'
+  | 'fastify'
+  | 'koa'
+  | 'django'
+  | 'flask'
+  | 'fastapi'
+  | 'spring'
+  | 'micronaut'
+  | 'ktor'
+  | 'gin'
+  | 'fiber'
+  | 'echo'
+  | 'rails'
+  | 'sinatra'
+  | 'laravel'
+  | 'symfony'
+  | 'actix'
+  | 'axum'
+  | 'rocket'
   | 'vapor'
   | 'phoenix'
-  | 'play' | 'akka'
+  | 'play'
+  | 'akka'
   | 'flutter'
   | 'aspnet';
 
 export type DetectedOrm =
-  | 'prisma' | 'typeorm' | 'sequelize' | 'mongoose'
-  | 'hibernate' | 'jpa'
-  | 'sqlalchemy' | 'django-orm'
+  | 'prisma'
+  | 'typeorm'
+  | 'sequelize'
+  | 'mongoose'
+  | 'hibernate'
+  | 'jpa'
+  | 'sqlalchemy'
+  | 'django-orm'
   | 'activerecord'
   | 'eloquent'
-  | 'diesel' | 'sqlx'
-  | 'exposed' | 'ktorm'
-  | 'slick' | 'doobie';
+  | 'diesel'
+  | 'sqlx'
+  | 'exposed'
+  | 'ktorm'
+  | 'slick'
+  | 'doobie';
 
 export interface DetectionResult {
-  languages:     DetectedLanguage[];
-  framework?:    DetectedFramework;
-  orm?:          DetectedOrm;
+  languages: DetectedLanguage[];
+  framework?: DetectedFramework;
+  orm?: DetectedOrm;
   analysisDepth: AnalysisDepth;
 }

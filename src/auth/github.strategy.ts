@@ -15,13 +15,14 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     const clientID = process.env.GITHUB_CLIENT_ID;
     const clientSecret = process.env.GITHUB_CLIENT_SECRET;
     const callbackURL =
-      process.env.GITHUB_CALLBACK_URL ?? 'http://localhost:3000/auth/github/callback';
+      process.env.GITHUB_CALLBACK_URL ??
+      'http://localhost:3000/auth/github/callback';
 
     super({
-      clientID:     clientID ?? 'missing-client-id',
+      clientID: clientID ?? 'missing-client-id',
       clientSecret: clientSecret ?? 'missing-secret',
       callbackURL,
-      scope:        ['repo', 'user'],
+      scope: ['repo', 'user'],
     });
   }
 
@@ -30,13 +31,15 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     _refreshToken: string,
     profile: Profile,
   ): GithubValidatedUser {
-    const email = (this.primaryEmail(profile) ?? this.noreplyEmail(profile)).toLowerCase();
+    const email = (
+      this.primaryEmail(profile) ?? this.noreplyEmail(profile)
+    ).toLowerCase();
 
     return {
       githubAccessToken: accessToken,
-      githubId:          String(profile.id),
+      githubId: String(profile.id),
       email,
-      displayName:       profile.displayName ?? profile.username,
+      displayName: profile.displayName ?? profile.username,
     };
   }
 
@@ -45,7 +48,7 @@ export class GithubStrategy extends PassportStrategy(Strategy, 'github') {
     if (!emails?.length) return undefined;
     type EmailEntry = { value: string; primary?: boolean };
     const list = emails as EmailEntry[];
-    const primary = list.find(e => e.primary === true);
+    const primary = list.find((e) => e.primary === true);
     return (primary ?? list[0]).value;
   }
 

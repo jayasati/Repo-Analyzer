@@ -20,28 +20,30 @@ export interface Cycle {
  */
 @Injectable()
 export class CycleDetectorService {
-
   detect(edges: { from: string; to: string }[]): Cycle[] {
     // ── Build adjacency list ────────────────────────────────────────────────
     const graph = new Map<string, string[]>();
 
     for (const { from, to } of edges) {
       if (!graph.has(from)) graph.set(from, []);
-      if (!graph.has(to))   graph.set(to,   []);
+      if (!graph.has(to)) graph.set(to, []);
       graph.get(from)!.push(to);
     }
 
     // ── Tarjan iterative SCC ────────────────────────────────────────────────
-    let   counter     = 0;
-    const index       = new Map<string, number>();
-    const lowlink     = new Map<string, number>();
-    const onStack     = new Set<string>();
-    const sccStack:   string[] = [];
-    const cycles:     Cycle[]  = [];
+    let counter = 0;
+    const index = new Map<string, number>();
+    const lowlink = new Map<string, number>();
+    const onStack = new Set<string>();
+    const sccStack: string[] = [];
+    const cycles: Cycle[] = [];
 
     // Work-list entry: the node we're processing and the index into its
     // neighbour list that we've processed so far.
-    interface Frame { node: string; neighbourIdx: number }
+    interface Frame {
+      node: string;
+      neighbourIdx: number;
+    }
     const callStack: Frame[] = [];
 
     const visit = (start: string): void => {
@@ -70,10 +72,7 @@ export class CycleDetectorService {
             onStack.add(next);
           } else if (onStack.has(next)) {
             // Back edge — update lowlink
-            lowlink.set(
-              node,
-              Math.min(lowlink.get(node)!, index.get(next)!),
-            );
+            lowlink.set(node, Math.min(lowlink.get(node)!, index.get(next)!));
           }
         } else {
           // All neighbours processed — pop this frame

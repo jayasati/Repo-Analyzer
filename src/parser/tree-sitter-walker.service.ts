@@ -1,10 +1,8 @@
-import Parser from "tree-sitter";
-import { ASTResult } from "./ast.types";
+import Parser from 'tree-sitter';
+import { ASTResult } from './ast.types';
 
 export class TreeSitterWalkerService {
-
   walk(tree: Parser.Tree): ASTResult {
-
     const result: ASTResult = {
       classes: [],
       functions: [],
@@ -12,13 +10,11 @@ export class TreeSitterWalkerService {
     };
 
     const visit = (node: Parser.SyntaxNode) => {
-
       const type = node.type;
 
       // Class detection
-      if (type.includes("class")) {
-
-        const nameNode = node.childForFieldName("name");
+      if (type.includes('class')) {
+        const nameNode = node.childForFieldName('name');
 
         if (nameNode) {
           result.classes.push({
@@ -28,9 +24,8 @@ export class TreeSitterWalkerService {
       }
 
       // Function detection
-      if (type.includes("function")) {
-
-        const nameNode = node.childForFieldName("name");
+      if (type.includes('function')) {
+        const nameNode = node.childForFieldName('name');
 
         if (nameNode) {
           result.functions.push({
@@ -40,8 +35,7 @@ export class TreeSitterWalkerService {
       }
 
       // Import detection
-      if (type.includes("import")) {
-
+      if (type.includes('import')) {
         const text = node.text;
 
         result.imports.push({
@@ -52,12 +46,10 @@ export class TreeSitterWalkerService {
       for (const child of node.children) {
         visit(child);
       }
-
     };
 
     visit(tree.rootNode);
 
     return result;
   }
-
 }

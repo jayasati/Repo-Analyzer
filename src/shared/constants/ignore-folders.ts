@@ -38,7 +38,7 @@ export const DEFAULT_IGNORED_FOLDERS: ReadonlyArray<string> = [
   '.mvn',
 
   // Rust
-  'target',   // also covers Rust target/
+  'target', // also covers Rust target/
 
   // .NET
   'obj',
@@ -49,7 +49,7 @@ export const DEFAULT_IGNORED_FOLDERS: ReadonlyArray<string> = [
   '.bundle',
 
   // PHP
-  'vendor',   // also covers PHP composer vendor/
+  'vendor', // also covers PHP composer vendor/
 
   // Flutter/Dart
   '.dart_tool',

@@ -1,5 +1,4 @@
 export interface RepoSummary {
-
   project: string;
 
   language?: string;
@@ -17,5 +16,4 @@ export interface RepoSummary {
   smells: number;
 
   architectureScore: number;
-
 }

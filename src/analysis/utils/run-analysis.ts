@@ -1,9 +1,9 @@
-import { LocalScannerService } from "../../input/local/local-scanner.service";
-import { StructuralAnalyzerService } from "../../structural/structural-analyzer.service";
-import { PackageGraphService } from "../graph/package-graph.service";
-import { CycleDetectorService } from "../cycles/cycle-detector.service";
-import { SmellDetectorService } from "../smells/smell-detector.service";
-import { ArchitectureMetricsService } from "../metrics/architecture-metrics.service";
+import { LocalScannerService } from '../../input/local/local-scanner.service';
+import { StructuralAnalyzerService } from '../../structural/structural-analyzer.service';
+import { PackageGraphService } from '../graph/package-graph.service';
+import { CycleDetectorService } from '../cycles/cycle-detector.service';
+import { SmellDetectorService } from '../smells/smell-detector.service';
+import { ArchitectureMetricsService } from '../metrics/architecture-metrics.service';
 
 export function runAnalysis() {
   const scanner = new LocalScannerService();

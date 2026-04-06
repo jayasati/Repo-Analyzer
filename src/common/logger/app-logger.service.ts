@@ -27,15 +27,18 @@ export class AppLoggerService implements LoggerService {
         : winston.format.combine(
             winston.format.colorize(),
             winston.format.timestamp({ format: 'HH:mm:ss' }),
-            winston.format.printf(({ level, message, timestamp, context }) =>
-              `${timestamp} [${context ?? 'App'}] ${level}: ${message}`,
+            winston.format.printf(
+              ({ level, message, timestamp, context }) =>
+                `${timestamp} [${context ?? 'App'}] ${level}: ${message}`,
             ),
           ),
       transports: [new winston.transports.Console()],
     });
   }
 
-  setCorrelationId(id: string): void { this.correlationId = id; }
+  setCorrelationId(id: string): void {
+    this.correlationId = id;
+  }
 
   log(message: string, context?: string): void {
     this.emit('info', message, context);
@@ -61,7 +64,7 @@ export class AppLoggerService implements LoggerService {
   ): void {
     this.winston.log(level, message, {
       context,
-      ...(trace             && { trace }),
+      ...(trace && { trace }),
       ...(this.correlationId && { correlationId: this.correlationId }),
     });
   }

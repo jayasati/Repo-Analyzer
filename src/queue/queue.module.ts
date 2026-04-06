@@ -11,9 +11,10 @@ import { HistoryModule } from '../history/history.module';
     BullModule.registerQueue({ name: ANALYSIS_QUEUE }),
     CoreModule,
     CacheModule,
-    HistoryModule,   // ← provides HistoryService for DB persistence
+    HistoryModule, // ← provides HistoryService for DB persistence
   ],
-  providers: [AnalysisJobProcessor],
-  exports:   [BullModule],
+  providers:
+    process.env.RUN_QUEUE_PROCESSOR === 'true' ? [AnalysisJobProcessor] : [],
+  exports: [BullModule],
 })
 export class QueueModule {}

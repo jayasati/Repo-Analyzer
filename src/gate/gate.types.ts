@@ -22,49 +22,49 @@ export interface GateThresholds {
 }
 
 export interface GateContext {
-  overallScore:    number;
+  overallScore: number;
   modularityScore: number;
-  couplingScore:   number;
-  smellsScore:     number;
-  cycleCount:      number;
-  smellCount:      number;
-  avgFanOut:       number;
-  smellTypes:      string[];
+  couplingScore: number;
+  smellsScore: number;
+  cycleCount: number;
+  smellCount: number;
+  avgFanOut: number;
+  smellTypes: string[];
 }
 
 export type GateSeverity = 'error' | 'warning';
 
 export interface GateViolation {
-  rule:       string;
-  severity:   GateSeverity;
-  message:    string;
-  current?:   number;
-  previous?:  number;
-  delta?:     number;
+  rule: string;
+  severity: GateSeverity;
+  message: string;
+  current?: number;
+  previous?: number;
+  delta?: number;
   suggestion: string;
 }
 
 export interface GateMetric {
-  label:     string;
-  current:   number | string;
+  label: string;
+  current: number | string;
   previous?: number | string;
-  status:    'pass' | 'fail' | 'warn';
-  delta?:    number;
+  status: 'pass' | 'fail' | 'warn';
+  delta?: number;
 }
 
 export interface GateResult {
-  passed:     boolean;
-  grade:      'A' | 'B' | 'C' | 'D' | 'F';
+  passed: boolean;
+  grade: 'A' | 'B' | 'C' | 'D' | 'F';
   violations: GateViolation[];
-  metrics:    GateMetric[];
-  summary:    string;
+  metrics: GateMetric[];
+  summary: string;
   /** PlantUML-compatible annotation block for gate failures */
   reportBlock: string;
 }
 
 export interface EvaluateGateDto {
   /** Job ID from a completed analysis */
-  jobId:      string;
+  jobId: string;
   /** Optional: a previous jobId to diff against (regression detection) */
   baselineJobId?: string;
   /** Custom thresholds – overrides defaults */

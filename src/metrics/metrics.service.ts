@@ -1,6 +1,8 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import {
-  Counter, Histogram, register,
+  Counter,
+  Histogram,
+  register,
   collectDefaultMetrics,
 } from 'prom-client';
 
@@ -14,29 +16,28 @@ import {
  */
 @Injectable()
 export class MetricsService implements OnModuleInit {
-
   readonly analysisTotal = new Counter({
-    name:    'analysis_requests_total',
-    help:    'Total analysis requests',
+    name: 'analysis_requests_total',
+    help: 'Total analysis requests',
     labelNames: ['status'],
   });
 
   readonly analysisDuration = new Histogram({
-    name:    'analysis_duration_seconds',
-    help:    'Analysis pipeline duration',
+    name: 'analysis_duration_seconds',
+    help: 'Analysis pipeline duration',
     labelNames: ['phase'],
     buckets: [1, 5, 10, 30, 60, 120, 180],
   });
 
   readonly cloneDuration = new Histogram({
-    name:    'clone_duration_seconds',
-    help:    'Git clone duration',
+    name: 'clone_duration_seconds',
+    help: 'Git clone duration',
     buckets: [1, 5, 10, 30, 60, 120],
   });
 
   readonly activeJobs = new Counter({
-    name:    'active_analysis_jobs',
-    help:    'Currently running analysis jobs',
+    name: 'active_analysis_jobs',
+    help: 'Currently running analysis jobs',
   });
 
   onModuleInit(): void {

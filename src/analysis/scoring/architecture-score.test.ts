@@ -1,13 +1,13 @@
-import { ArchitectureScoreService }   from './architecture-score.service';
-import { ArchitectureMetricsService }  from '../metrics/architecture-metrics.service';
-import { runAnalysis }                 from '../utils/run-analysis';
+import { ArchitectureScoreService } from './architecture-score.service';
+import { ArchitectureMetricsService } from '../metrics/architecture-metrics.service';
+import { runAnalysis } from '../utils/run-analysis';
 
 const { packageEdges, cycles, smells } = runAnalysis();
 
 // ArchitectureScoreService now depends on ArchitectureMetricsService via
 // constructor injection — pass it explicitly when instantiating outside NestJS DI.
 const metricsService = new ArchitectureMetricsService();
-const scoring        = new ArchitectureScoreService(metricsService);
+const scoring = new ArchitectureScoreService(metricsService);
 
 const score = scoring.compute(packageEdges, smells, cycles);
 

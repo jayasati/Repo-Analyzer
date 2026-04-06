@@ -1,19 +1,19 @@
 import { Test } from '@nestjs/testing';
-import { DiffService }    from './diff.service';
+import { DiffService } from './diff.service';
 import { HistoryService } from './history.service';
 import { NotFoundException } from '@nestjs/common';
 
 const makeEntity = (id: string, score: number, smells: string[]) => ({
   id,
-  analyzedAt:      new Date('2024-01-01'),
-  overallScore:    score,
+  analyzedAt: new Date('2024-01-01'),
+  overallScore: score,
   modularityScore: score,
-  couplingScore:   score,
-  smellsScore:     score,
-  cycleCount:      0,
-  smellCount:      smells.length,
-  moduleCount:     10,
-  fullResult:      JSON.stringify({ smells: smells.map(type => ({ type })) }),
+  couplingScore: score,
+  smellsScore: score,
+  cycleCount: 0,
+  smellCount: smells.length,
+  moduleCount: 10,
+  fullResult: JSON.stringify({ smells: smells.map((type) => ({ type })) }),
 });
 
 describe('DiffService', () => {
@@ -33,7 +33,9 @@ describe('DiffService', () => {
 
   it('throws NotFoundException when fromId not found', async () => {
     mockHistory.getById.mockResolvedValueOnce(null);
-    await expect(svc.compare('bad-id', 'other')).rejects.toThrow(NotFoundException);
+    await expect(svc.compare('bad-id', 'other')).rejects.toThrow(
+      NotFoundException,
+    );
   });
 
   it('computes positive delta when score improved', async () => {
@@ -51,7 +53,9 @@ describe('DiffService', () => {
   it('detects regression and new smells', async () => {
     mockHistory.getById
       .mockResolvedValueOnce(makeEntity('a', 80, []))
-      .mockResolvedValueOnce(makeEntity('b', 65, ['circular-dependency', 'god-module']));
+      .mockResolvedValueOnce(
+        makeEntity('b', 65, ['circular-dependency', 'god-module']),
+      );
 
     const diff = await svc.compare('a', 'b');
     expect(diff.regression).toBe(true);

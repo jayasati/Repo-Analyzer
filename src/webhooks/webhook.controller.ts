@@ -1,6 +1,11 @@
 import {
-  Body, Controller, Headers, HttpCode,
-  HttpStatus, Post, UnauthorizedException,
+  Body,
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { createHmac, timingSafeEqual } from 'crypto';
@@ -32,9 +37,9 @@ export class WebhookController {
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: 'Receive GitHub push webhook and trigger analysis' })
   async githubWebhook(
-    @Body()    body:      Record<string, unknown>,
-    @Headers('x-hub-signature-256') sig:   string,
-    @Headers('x-github-event')      event: string,
+    @Body() body: Record<string, unknown>,
+    @Headers('x-hub-signature-256') sig: string,
+    @Headers('x-github-event') event: string,
   ): Promise<{ queued: boolean; jobId?: string }> {
     // Verify webhook signature
     const secret = process.env.GITHUB_WEBHOOK_SECRET;
@@ -54,9 +59,11 @@ export class WebhookController {
     // Only handle push events
     if (event !== 'push') return { queued: false };
 
-    const repoUrl  = (body.repository as { html_url?: string })?.html_url;
-    const branch   = ((body.ref as string) ?? '').replace('refs/heads/', '');
-    const defaultB = (body.repository as { default_branch?: string })?.default_branch ?? 'main';
+    const repoUrl = (body.repository as { html_url?: string })?.html_url;
+    const branch = ((body.ref as string) ?? '').replace('refs/heads/', '');
+    const defaultB =
+      (body.repository as { default_branch?: string })?.default_branch ??
+      'main';
 
     // Only analyze pushes to the default branch
     if (branch !== defaultB) return { queued: false };
@@ -66,7 +73,12 @@ export class WebhookController {
     const jobId = randomUUID();
     await this.queue.add(
       'analyze',
-      { jobId, source: repoUrl, isGitHub: true, requestedAt: new Date().toISOString() },
+      {
+        jobId,
+        source: repoUrl,
+        isGitHub: true,
+        requestedAt: new Date().toISOString(),
+      },
       { jobId, attempts: 1, removeOnComplete: { count: 50 } },
     );
 

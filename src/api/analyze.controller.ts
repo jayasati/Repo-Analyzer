@@ -1,10 +1,18 @@
 import {
-  Body, Controller, Get, HttpCode, HttpStatus,
-  NotFoundException, Param, Post, Res, UseGuards,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Post,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { ThrottlerGuard } from '@nestjs/throttler';
+import { SkipThrottle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Response } from 'express';
 import { randomUUID } from 'crypto';
 import { AnalyzeRequestDto } from './dto/analyze-request.dto';
@@ -15,7 +23,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { JobProgressEvent } from '../queue/analysis-job.types';
 import { Query } from '@nestjs/common';
 import { ReportService } from '../report/report.service';
-import type { ReportFormat }  from '../report/report.types';
+import type { ReportFormat } from '../report/report.types';
 import { ApiOperation } from '@nestjs/swagger';
 
 @Controller('analyze')
@@ -23,8 +31,8 @@ import { ApiOperation } from '@nestjs/swagger';
 export class AnalyzeController {
   constructor(
     @InjectQueue(ANALYSIS_QUEUE) private readonly queue: Queue,
-    private readonly cache:   AnalysisCacheService,
-    private readonly logger:  AppLoggerService,
+    private readonly cache: AnalysisCacheService,
+    private readonly logger: AppLoggerService,
     private readonly emitter: EventEmitter2,
     private readonly reports: ReportService,
   ) {}
@@ -44,16 +52,24 @@ export class AnalyzeController {
 
     await this.queue.add(
       'analyze',
-      { jobId, source: body.source, isGitHub, requestedAt: new Date().toISOString() },
+      {
+        jobId,
+        source: body.source,
+        isGitHub,
+        requestedAt: new Date().toISOString(),
+      },
       {
         jobId,
         removeOnComplete: { count: 100 },
-        removeOnFail:     { count: 50 },
-        attempts:         1, // No retries for user-requested analysis
+        removeOnFail: { count: 50 },
+        attempts: 1, // No retries for user-requested analysis
       },
     );
 
-    this.logger.log(`Enqueued job ${jobId} for ${body.source}`, 'AnalyzeController');
+    this.logger.log(
+      `Enqueued job ${jobId} for ${body.source}`,
+      'AnalyzeController',
+    );
     return { jobId };
   }
 
@@ -61,9 +77,11 @@ export class AnalyzeController {
    * Poll for the result once complete.
    */
   @Get(':jobId')
+  @SkipThrottle()
   async getResult(@Param('jobId') jobId: string) {
     const result = await this.cache.get(jobId);
-    if (!result) throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
+    if (!result)
+      throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
     return result;
   }
 
@@ -75,10 +93,8 @@ export class AnalyzeController {
    * upgrade negotiation. Perfect for progress reporting.
    */
   @Get(':jobId/progress')
-  streamProgress(
-    @Param('jobId') jobId: string,
-    @Res() res: Response,
-  ): void {
+  @SkipThrottle()
+  streamProgress(@Param('jobId') jobId: string, @Res() res: Response): void {
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -107,6 +123,7 @@ export class AnalyzeController {
 
   //---Report download endpoint ----------//
   @Get(':jobId/report')
+  @SkipThrottle()
   @ApiOperation({ summary: 'Download analysis report in chosen format' })
   async downloadReport(
     @Param('jobId') jobId: string,
@@ -114,18 +131,26 @@ export class AnalyzeController {
     @Res() res: Response,
   ): Promise<void> {
     const result = await this.cache.get(jobId);
-    if (!result) throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
+    if (!result)
+      throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
 
     const content = this.reports.generate(result, format);
 
-    const contentType = format === 'html'     ? 'text/html'
-      : format === 'markdown'                  ? 'text/markdown'
-      : 'application/json';
+    const contentType =
+      format === 'html'
+        ? 'text/html'
+        : format === 'markdown'
+          ? 'text/markdown'
+          : 'application/json';
 
-    const ext = format === 'html' ? 'html' : format === 'markdown' ? 'md' : 'json';
+    const ext =
+      format === 'html' ? 'html' : format === 'markdown' ? 'md' : 'json';
 
     res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename="report-${jobId}.${ext}"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="report-${jobId}.${ext}"`,
+    );
     res.send(content);
   }
 }

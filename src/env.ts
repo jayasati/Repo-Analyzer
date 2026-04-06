@@ -12,7 +12,6 @@ function ensureDatabaseUrl(): void {
   const pass = process.env.DB_PASSWORD ?? '';
   const port = process.env.DB_PORT ?? '5432';
   const name = process.env.DB_NAME ?? 'repo_analyzer';
-  process.env.DATABASE_URL =
-    `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/${name}`;
+  process.env.DATABASE_URL = `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(pass)}@${host}:${port}/${name}`;
 }
 ensureDatabaseUrl();

@@ -27,10 +27,7 @@ describe('POST /analyze (e2e)', () => {
   });
 
   it('rejects an empty body with 400', async () => {
-    await request(app.getHttpServer())
-      .post('/analyze')
-      .send({})
-      .expect(400);
+    await request(app.getHttpServer()).post('/analyze').send({}).expect(400);
   });
 
   it('accepts a valid GitHub URL and returns a jobId', async () => {
@@ -39,8 +36,6 @@ describe('POST /analyze (e2e)', () => {
       .send({ source: 'https://github.com/nestjs/nest' })
       .expect(202);
 
-    expect(res.body.jobId).toMatch(
-      /^[0-9a-f-]{36}$/,
-    );
+    expect(res.body.jobId).toMatch(/^[0-9a-f-]{36}$/);
   });
 });

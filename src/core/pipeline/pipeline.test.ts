@@ -1,29 +1,29 @@
-import { AnalysisPipelineService }    from './analysis-pipeline.service';
+import { AnalysisPipelineService } from './analysis-pipeline.service';
 
 // Scan-phase services
-import { LocalScannerService }        from '../../input/local/local-scanner.service';
-import { LanguageDetectorService }    from '../../detection/language-detector.service';
-import { StructuralAnalyzerService }  from '../../structural/structural-analyzer.service';
-import { SemanticAnalyzerService }    from '../../semantic/semantic-analyzer.service';
-import { TreeSitterAnalyzer }         from '../../semantic/analyzers/tree-sitter-analyzer';
-import { PackageGraphService }        from '../../analysis/graph/package-graph.service';
-import { GraphMergeService }          from '../../graph/graph-merge.service';
+import { LocalScannerService } from '../../input/local/local-scanner.service';
+import { LanguageDetectorService } from '../../detection/language-detector.service';
+import { StructuralAnalyzerService } from '../../structural/structural-analyzer.service';
+import { SemanticAnalyzerService } from '../../semantic/semantic-analyzer.service';
+import { TreeSitterAnalyzer } from '../../semantic/analyzers/tree-sitter-analyzer';
+import { PackageGraphService } from '../../analysis/graph/package-graph.service';
+import { GraphMergeService } from '../../graph/graph-merge.service';
 
 // Analysis-phase services
-import { CycleDetectorService }       from '../../analysis/cycles/cycle-detector.service';
-import { SmellDetectorService }       from '../../analysis/smells/smell-detector.service';
+import { CycleDetectorService } from '../../analysis/cycles/cycle-detector.service';
+import { SmellDetectorService } from '../../analysis/smells/smell-detector.service';
 import { ArchitectureMetricsService } from '../../analysis/metrics/architecture-metrics.service';
-import { ArchitectureScoreService }   from '../../analysis/scoring/architecture-score.service';
-import { ConfidenceService }          from '../../analysis/confidence/confidence.service';
-import { BaselineComparatorService }  from '../../analysis/baseline/baseline-comparator.service';
-import { HotspotDetectorService }     from '../../analysis/insights/hotspot-detector.service';
-import { ImpactAnalyzerService }      from '../../analysis/impact/impact-analyzer.service';
-import { ArchitectureHealthService }  from '../../analysis/reports/architecture-health.service';
-import { RepoSummaryService }         from '../../analysis/insights/repo-summary.service';
+import { ArchitectureScoreService } from '../../analysis/scoring/architecture-score.service';
+import { ConfidenceService } from '../../analysis/confidence/confidence.service';
+import { BaselineComparatorService } from '../../analysis/baseline/baseline-comparator.service';
+import { HotspotDetectorService } from '../../analysis/insights/hotspot-detector.service';
+import { ImpactAnalyzerService } from '../../analysis/impact/impact-analyzer.service';
+import { ArchitectureHealthService } from '../../analysis/reports/architecture-health.service';
+import { RepoSummaryService } from '../../analysis/insights/repo-summary.service';
 
 // Render-phase services
-import { DiagramPrepService }         from '../../diagram/diagram-prep.service';
-import { PlantUmlRendererService }    from '../../diagram/plantuml-renderer.service';
+import { DiagramPrepService } from '../../diagram/diagram-prep.service';
+import { PlantUmlRendererService } from '../../diagram/plantuml-renderer.service';
 
 // ─── Instantiate service groups (mirrors the NestJS DI token factories) ──────
 
@@ -32,30 +32,30 @@ const metricsService = new ArchitectureMetricsService();
 const pipeline = new AnalysisPipelineService(
   // PIPELINE_SCANNERS group
   {
-    scanner:            new LocalScannerService(),
-    detector:           new LanguageDetectorService(),
+    scanner: new LocalScannerService(),
+    detector: new LanguageDetectorService(),
     structuralAnalyzer: new StructuralAnalyzerService(),
-    semanticAnalyzer:   new SemanticAnalyzerService([new TreeSitterAnalyzer()]),
-    packageGraph:       new PackageGraphService(),
-    merger:             new GraphMergeService(),
+    semanticAnalyzer: new SemanticAnalyzerService([new TreeSitterAnalyzer()]),
+    packageGraph: new PackageGraphService(),
+    merger: new GraphMergeService(),
   },
   // PIPELINE_ANALYZERS group
   {
-    cycleDetector:      new CycleDetectorService(),
-    smellDetector:      new SmellDetectorService(),
+    cycleDetector: new CycleDetectorService(),
+    smellDetector: new SmellDetectorService(),
     metricsService,
-    scoreService:       new ArchitectureScoreService(metricsService),
-    confidenceService:  new ConfidenceService(),
+    scoreService: new ArchitectureScoreService(metricsService),
+    confidenceService: new ConfidenceService(),
     baselineComparator: new BaselineComparatorService(),
-    hotspotDetector:    new HotspotDetectorService(),
-    impactAnalyzer:     new ImpactAnalyzerService(),
-    healthService:      new ArchitectureHealthService(),
-    summaryService:     new RepoSummaryService(),
+    hotspotDetector: new HotspotDetectorService(),
+    impactAnalyzer: new ImpactAnalyzerService(),
+    healthService: new ArchitectureHealthService(),
+    summaryService: new RepoSummaryService(),
   },
   // PIPELINE_RENDERERS group
   {
     diagramPrep: new DiagramPrepService(),
-    renderer:    new PlantUmlRendererService(),
+    renderer: new PlantUmlRendererService(),
   },
 );
 
@@ -98,7 +98,7 @@ console.log('\n===== ARCHITECTURE SMELLS =====');
 if (result.smells.length === 0) {
   console.log('None detected');
 } else {
-  result.smells.forEach(s =>
+  result.smells.forEach((s) =>
     console.log(`[${s.severity.toUpperCase()}] ${s.type} — ${s.message}`),
   );
 }
@@ -108,7 +108,7 @@ console.log('\n===== CIRCULAR DEPENDENCIES =====');
 if (result.cycles.length === 0) {
   console.log('None detected');
 } else {
-  result.cycles.forEach(c => console.log(' →', c.nodes.join(' → ')));
+  result.cycles.forEach((c) => console.log(' →', c.nodes.join(' → ')));
 }
 
 // ── Hotspots ──────────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ console.log('\n===== HOTSPOTS =====');
 if (result.hotspots.length === 0) {
   console.log('None detected');
 } else {
-  result.hotspots.forEach(h =>
+  result.hotspots.forEach((h) =>
     console.log(`[${h.risk.toUpperCase()}] ${h.module} — fanOut: ${h.fanOut}`),
   );
 }
@@ -137,24 +137,40 @@ console.log('Factors:    ', result.confidence.factors);
 
 // ── Baseline ──────────────────────────────────────────────────────────────────
 console.log('\n===== BASELINE COMPARISON =====');
-result.baseline.forEach(b => console.log(`${b.name}: ${b.similarity}`));
+result.baseline.forEach((b) => console.log(`${b.name}: ${b.similarity}`));
 console.log('Predicted style:', result.baseline[0]?.name ?? 'unknown');
 
 // ── Unified graph stats ───────────────────────────────────────────────────────
 console.log('\n===== UNIFIED GRAPH =====');
 console.log('Total nodes:     ', result.unifiedGraph.nodes.length);
 console.log('Total edges:     ', result.unifiedGraph.edges.length);
-console.log('Semantic nodes:  ', result.unifiedGraph.nodes.filter(n => n.source === 'semantic').length);
-console.log('Structural nodes:', result.unifiedGraph.nodes.filter(n => n.source === 'structural').length);
-console.log('Injection edges: ', result.unifiedGraph.edges.filter(e => e.type === 'constructor-injection').length);
-console.log('Import edges:    ', result.unifiedGraph.edges.filter(e => e.type === 'import').length);
+console.log(
+  'Semantic nodes:  ',
+  result.unifiedGraph.nodes.filter((n) => n.source === 'semantic').length,
+);
+console.log(
+  'Structural nodes:',
+  result.unifiedGraph.nodes.filter((n) => n.source === 'structural').length,
+);
+console.log(
+  'Injection edges: ',
+  result.unifiedGraph.edges.filter((e) => e.type === 'constructor-injection')
+    .length,
+);
+console.log(
+  'Import edges:    ',
+  result.unifiedGraph.edges.filter((e) => e.type === 'import').length,
+);
 
 // ── Node type breakdown ───────────────────────────────────────────────────────
 console.log('\n===== NODE TYPE BREAKDOWN =====');
-const nodeTypes = result.unifiedGraph.nodes.reduce<Record<string, number>>((acc, n) => {
-  acc[n.type] = (acc[n.type] ?? 0) + 1;
-  return acc;
-}, {});
+const nodeTypes = result.unifiedGraph.nodes.reduce<Record<string, number>>(
+  (acc, n) => {
+    acc[n.type] = (acc[n.type] ?? 0) + 1;
+    return acc;
+  },
+  {},
+);
 console.log(nodeTypes);
 
 // ── Diagrams ──────────────────────────────────────────────────────────────────

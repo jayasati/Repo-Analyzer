@@ -32,7 +32,10 @@ export class TokenCryptoService {
   encrypt(plainText: string): string {
     const iv = randomBytes(IV_LENGTH);
     const cipher = createCipheriv(ALGORITHM, this.getKey(), iv);
-    const enc = Buffer.concat([cipher.update(plainText, 'utf8'), cipher.final()]);
+    const enc = Buffer.concat([
+      cipher.update(plainText, 'utf8'),
+      cipher.final(),
+    ]);
     const tag = cipher.getAuthTag();
     return Buffer.concat([iv, tag, enc]).toString('base64');
   }
@@ -44,6 +47,8 @@ export class TokenCryptoService {
     const data = buf.subarray(IV_LENGTH + AUTH_TAG_LENGTH);
     const decipher = createDecipheriv(ALGORITHM, this.getKey(), iv);
     decipher.setAuthTag(tag);
-    return Buffer.concat([decipher.update(data), decipher.final()]).toString('utf8');
+    return Buffer.concat([decipher.update(data), decipher.final()]).toString(
+      'utf8',
+    );
   }
 }

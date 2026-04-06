@@ -6,15 +6,17 @@ import { AnalysisResultEntity } from '../persistence/entities/analysis-result.en
 describe('BadgeController', () => {
   let ctrl: BadgeController;
   const mockRepo = { findOne: jest.fn() };
-  const mockRes  = { setHeader: jest.fn(), send: jest.fn() };
+  const mockRes = { setHeader: jest.fn(), send: jest.fn() };
 
   beforeEach(async () => {
     const mod = await Test.createTestingModule({
       controllers: [BadgeController],
-      providers: [{
-        provide: getRepositoryToken(AnalysisResultEntity),
-        useValue: mockRepo,
-      }],
+      providers: [
+        {
+          provide: getRepositoryToken(AnalysisResultEntity),
+          useValue: mockRepo,
+        },
+      ],
     }).compile();
     ctrl = mod.get(BadgeController);
     jest.clearAllMocks();
@@ -45,6 +47,9 @@ describe('BadgeController', () => {
   it('sets correct content-type header', async () => {
     mockRepo.findOne.mockResolvedValue({ overallScore: 75 });
     await ctrl.getBadge('owner', 'repo', mockRes as never);
-    expect(mockRes.setHeader).toHaveBeenCalledWith('Content-Type', 'image/svg+xml');
+    expect(mockRes.setHeader).toHaveBeenCalledWith(
+      'Content-Type',
+      'image/svg+xml',
+    );
   });
 });

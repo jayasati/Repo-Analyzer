@@ -1,5 +1,7 @@
 import {
-  ConflictException, Injectable, NotFoundException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
 } from '@nestjs/common';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcrypt';
@@ -35,7 +37,9 @@ export class UsersService {
   }
 
   async findByEmailWithPassword(email: string) {
-    return this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    return this.prisma.user.findUnique({
+      where: { email: email.toLowerCase() },
+    });
   }
 
   async findById(id: string): Promise<AuthUserPayload | null> {
@@ -45,7 +49,10 @@ export class UsersService {
     });
   }
 
-  async validatePassword(plain: string, passwordHash: string | null): Promise<boolean> {
+  async validatePassword(
+    plain: string,
+    passwordHash: string | null,
+  ): Promise<boolean> {
     if (!passwordHash) return false;
     return bcrypt.compare(plain, passwordHash);
   }
@@ -64,7 +71,7 @@ export class UsersService {
       const user = await this.prisma.user.update({
         where: { id: byGithub.id },
         data: {
-          email:             oauth.email,
+          email: oauth.email,
           githubAccessToken: enc,
         },
         select: { id: true, email: true, role: true },
@@ -72,12 +79,14 @@ export class UsersService {
       return user;
     }
 
-    const byEmail = await this.prisma.user.findUnique({ where: { email: oauth.email } });
+    const byEmail = await this.prisma.user.findUnique({
+      where: { email: oauth.email },
+    });
     if (byEmail) {
       const user = await this.prisma.user.update({
         where: { id: byEmail.id },
         data: {
-          githubId:          oauth.githubId,
+          githubId: oauth.githubId,
           githubAccessToken: enc,
         },
         select: { id: true, email: true, role: true },
@@ -87,9 +96,9 @@ export class UsersService {
 
     const user = await this.prisma.user.create({
       data: {
-        email:             oauth.email,
-        password:          null,
-        githubId:          oauth.githubId,
+        email: oauth.email,
+        password: null,
+        githubId: oauth.githubId,
         githubAccessToken: enc,
       },
       select: { id: true, email: true, role: true },
@@ -128,7 +137,10 @@ export class UsersService {
 
   // ── API keys ──────────────────────────────────────────────────────────────
 
-  async generateApiKey(userId: string, name?: string): Promise<{ key: string; id: string }> {
+  async generateApiKey(
+    userId: string,
+    name?: string,
+  ): Promise<{ key: string; id: string }> {
     const user = await this.findById(userId);
     if (!user) throw new NotFoundException('User not found');
 
@@ -152,7 +164,12 @@ export class UsersService {
     return this.prisma.apiKey.findMany({
       where: { userId, active: true },
       select: {
-        id: true, prefix: true, name: true, active: true, userId: true, createdAt: true,
+        id: true,
+        prefix: true,
+        name: true,
+        active: true,
+        userId: true,
+        createdAt: true,
       },
     });
   }
@@ -160,7 +177,7 @@ export class UsersService {
   async revokeApiKey(keyId: string, userId: string): Promise<void> {
     await this.prisma.apiKey.updateMany({
       where: { id: keyId, userId },
-      data:  { active: false },
+      data: { active: false },
     });
   }
 

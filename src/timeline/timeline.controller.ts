@@ -14,8 +14,8 @@ export class TimelineController {
   @ApiQuery({ name: 'limit', required: false, type: Number })
   getTimeline(
     @Param('repoOwner') owner: string,
-    @Param('repoName')  name:  string,
-    @Query('limit')     limit?: string,
+    @Param('repoName') name: string,
+    @Query('limit') limit?: string,
   ) {
     const repoUrl = `https://github.com/${owner}/${name}`;
     return this.timeline.getTimeline(repoUrl, limit ? Number(limit) : 20);
@@ -23,12 +23,7 @@ export class TimelineController {
 
   @Get('compare/:fromId/:toId')
   @ApiOperation({ summary: 'Diff two architecture snapshots (PR comparison)' })
-  compare(
-    @Param('fromId') fromId: string,
-    @Param('toId')   toId:   string,
-  ) {
+  compare(@Param('fromId') fromId: string, @Param('toId') toId: string) {
     return this.timeline.compareSnapshots(fromId, toId);
   }
 }
-
-

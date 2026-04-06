@@ -18,20 +18,16 @@ program
   .argument('<source>', 'Local path or GitHub repository URL')
   .option('--pretty', 'Pretty-print output')
   .action(async (source, options) => {
-
     const app = await NestFactory.createApplicationContext(AppModule);
 
     const analyzer = app.get(AnalyzerService);
 
-    const result =
-      source.startsWith('http')
-        ? await analyzer.analyzeGitHub(source)
-        : await analyzer.analyzeLocal(source);
+    const result = source.startsWith('http')
+      ? await analyzer.analyzeGitHub(source)
+      : await analyzer.analyzeLocal(source);
 
     console.log(
-      options.pretty
-        ? JSON.stringify(result, null, 2)
-        : JSON.stringify(result),
+      options.pretty ? JSON.stringify(result, null, 2) : JSON.stringify(result),
     );
 
     await app.close();

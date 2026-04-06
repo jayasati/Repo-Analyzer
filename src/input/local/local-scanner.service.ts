@@ -6,7 +6,6 @@ import { DEFAULT_IGNORED_FOLDERS } from '../../shared/constants/ignore-folders';
 
 @Injectable()
 export class LocalScannerService {
-
   private scanDirectory(dirPath: string): FileNode {
     const node: FileNode = {
       path: path.normalize(dirPath),

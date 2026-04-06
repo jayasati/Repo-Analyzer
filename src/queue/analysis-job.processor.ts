@@ -12,10 +12,10 @@ import { HistoryService } from '../history/history.service';
 export class AnalysisJobProcessor extends WorkerHost {
   constructor(
     private readonly analyzer: AnalyzerService,
-    private readonly cache:    AnalysisCacheService,
-    private readonly logger:   AppLoggerService,
-    private readonly emitter:  EventEmitter2,
-    private readonly history:  HistoryService,
+    private readonly cache: AnalysisCacheService,
+    private readonly logger: AppLoggerService,
+    private readonly emitter: EventEmitter2,
+    private readonly history: HistoryService,
   ) {
     super();
   }
@@ -24,12 +24,21 @@ export class AnalysisJobProcessor extends WorkerHost {
     const { jobId, source, isGitHub } = job.data;
 
     const emit = (status: string, message: string, progress: number): void => {
-      this.emitter.emit('analysis.progress', { jobId, status, message, progress });
+      this.emitter.emit('analysis.progress', {
+        jobId,
+        status,
+        message,
+        progress,
+      });
       job.updateProgress(progress).catch(() => undefined);
     };
 
     try {
-      emit('cloning',   isGitHub ? 'Cloning repository…' : 'Scanning local path…', 5);
+      emit(
+        'cloning',
+        isGitHub ? 'Cloning repository…' : 'Scanning local path…',
+        5,
+      );
       emit('analyzing', 'Running analysis pipeline…', 30);
 
       const result = isGitHub
@@ -40,7 +49,8 @@ export class AnalysisJobProcessor extends WorkerHost {
       try {
         await this.history.save(source, result);
       } catch (persistErr) {
-        const msg = persistErr instanceof Error ? persistErr.message : String(persistErr);
+        const msg =
+          persistErr instanceof Error ? persistErr.message : String(persistErr);
         this.logger.warn(
           `Job ${jobId} history save skipped: ${msg}`,
           'AnalysisJobProcessor',
@@ -51,7 +61,11 @@ export class AnalysisJobProcessor extends WorkerHost {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       emit('failed', msg, 0);
-      this.logger.error(`Job ${jobId} failed: ${msg}`, undefined, 'AnalysisJobProcessor');
+      this.logger.error(
+        `Job ${jobId} failed: ${msg}`,
+        undefined,
+        'AnalysisJobProcessor',
+      );
       throw err;
     }
   }

@@ -1,20 +1,29 @@
 // ── src/copilot/copilot.controller.ts ────────────────────────────────────────
 
 import {
-  Body, Controller, Get, HttpCode, HttpStatus,
-  NotFoundException, Param, Post,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  NotFoundException,
+  Param,
+  Post,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CopilotService, PREDEFINED_QUERIES } from './copilot.service';
-import { GraphQueryEngine }  from './graph-query.engine';
+import { GraphQueryEngine } from './graph-query.engine';
 import { AnalysisCacheService } from '../cache/analysis-cache.service';
 
 class AskDto {
-  @IsString() @IsNotEmpty() @MaxLength(500)
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(500)
   question!: string;
 
-  @IsOptional() @IsString()
+  @IsOptional()
+  @IsString()
   mode?: 'freeform' | 'predefined';
 }
 
@@ -22,9 +31,9 @@ class AskDto {
 @Controller('copilot')
 export class CopilotController {
   constructor(
-    private readonly copilot:   CopilotService,
+    private readonly copilot: CopilotService,
     private readonly graphQuery: GraphQueryEngine,
-    private readonly cache:     AnalysisCacheService,
+    private readonly cache: AnalysisCacheService,
   ) {}
 
   /** List the canned quick-action queries */
@@ -45,11 +54,10 @@ export class CopilotController {
    */
   @Post(':jobId/ask')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Ask an architecture question about a completed analysis' })
-  async ask(
-    @Param('jobId') jobId: string,
-    @Body() dto: AskDto,
-  ) {
+  @ApiOperation({
+    summary: 'Ask an architecture question about a completed analysis',
+  })
+  async ask(@Param('jobId') jobId: string, @Body() dto: AskDto) {
     const result = await this.cache.get(jobId);
     if (!result) throw new NotFoundException(`Job ${jobId} not found`);
     return this.copilot.ask(result, dto);
@@ -88,9 +96,8 @@ export class CopilotController {
     const result = await this.cache.get(jobId);
     if (!result) throw new NotFoundException(`Job ${jobId} not found`);
     return this.copilot.ask(result, {
-      question: 'Give me a plain-English overview of this codebase: its structure, main concerns, biggest risks, and the top 3 things to improve.',
+      question:
+        'Give me a plain-English overview of this codebase: its structure, main concerns, biggest risks, and the top 3 things to improve.',
     });
   }
 }
-
-

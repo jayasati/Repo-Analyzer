@@ -1,14 +1,14 @@
-import { DetectionResult } from "../../detection/detection-result.type";
-import { UnifiedGraph } from "../../graph/unified-graph.types";
-import { ArchitectureScore } from "../../analysis/scoring/architecture-score.types";
-import { ArchitectureSmell } from "../../analysis/smells/smell.types";
-import { ArchitectureMetrics } from "../../analysis/metrics/architecture-metrics.types";
-import { RepoSummary } from "../../analysis/insights/repo-summary.types";
-import { Hotspot } from "../../analysis/insights/hotspot.types";
-import { ImpactResult } from "../../analysis/impact/impact.types";
-import { ArchitectureHealth } from "../../analysis/reports/architecture-health.types";
-import { ConfidenceResult } from "../../analysis/confidence/confidence.types";
-import { BaselineComparison } from "../../analysis/baseline/baseline.types";
+import { DetectionResult } from '../../detection/detection-result.type';
+import { UnifiedGraph } from '../../graph/unified-graph.types';
+import { ArchitectureScore } from '../../analysis/scoring/architecture-score.types';
+import { ArchitectureSmell } from '../../analysis/smells/smell.types';
+import { ArchitectureMetrics } from '../../analysis/metrics/architecture-metrics.types';
+import { RepoSummary } from '../../analysis/insights/repo-summary.types';
+import { Hotspot } from '../../analysis/insights/hotspot.types';
+import { ImpactResult } from '../../analysis/impact/impact.types';
+import { ArchitectureHealth } from '../../analysis/reports/architecture-health.types';
+import { ConfidenceResult } from '../../analysis/confidence/confidence.types';
+import { BaselineComparison } from '../../analysis/baseline/baseline.types';
 
 export interface PipelineResult {
   projectName: string;

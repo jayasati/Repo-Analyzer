@@ -13,8 +13,7 @@ export class ApiKeyStrategy extends PassportStrategy(Strategy, 'api-key') {
 
   async validate(req: Request): Promise<AuthUserPayload> {
     const key =
-      (req.headers['x-api-key'] as string) ??
-      (req.query['api_key'] as string);
+      (req.headers['x-api-key'] as string) ?? (req.query['api_key'] as string);
 
     if (!key) throw new UnauthorizedException();
 

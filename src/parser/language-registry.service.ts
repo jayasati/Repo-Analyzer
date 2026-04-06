@@ -4,7 +4,6 @@
 export type TreeSitterLanguage = any;
 
 export class LanguageRegistry {
-
   private languages = new Map<string, TreeSitterLanguage>();
 
   register(name: string, grammar: TreeSitterLanguage) {
@@ -18,5 +17,4 @@ export class LanguageRegistry {
   list(): string[] {
     return Array.from(this.languages.keys());
   }
-
 }

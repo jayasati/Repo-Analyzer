@@ -1,18 +1,13 @@
-import { ImpactResult } from "./impact.types";
+import { ImpactResult } from './impact.types';
 
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class ImpactAnalyzerService {
-
-  analyze(
-    edges: { from: string; to: string }[],
-    target: string
-  ): ImpactResult {
-
+  analyze(edges: { from: string; to: string }[], target: string): ImpactResult {
     const reverseGraph = new Map<string, string[]>();
 
-    edges.forEach(edge => {
+    edges.forEach((edge) => {
       if (!reverseGraph.has(edge.to)) {
         reverseGraph.set(edge.to, []);
       }
@@ -27,7 +22,7 @@ export class ImpactAnalyzerService {
       const node = stack.pop()!;
       const dependents = reverseGraph.get(node) || [];
 
-      dependents.forEach(dep => {
+      dependents.forEach((dep) => {
         if (!visited.has(dep)) {
           visited.add(dep);
           affected.push(dep);

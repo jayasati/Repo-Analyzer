@@ -2,7 +2,9 @@ import { CycleDetectorService } from './cycle-detector.service';
 
 describe('CycleDetectorService', () => {
   let svc: CycleDetectorService;
-  beforeEach(() => { svc = new CycleDetectorService(); });
+  beforeEach(() => {
+    svc = new CycleDetectorService();
+  });
 
   it('returns empty array for no edges', () => {
     expect(svc.detect([])).toEqual([]);
@@ -44,7 +46,7 @@ describe('CycleDetectorService', () => {
     const N = 20_000;
     const edges = Array.from({ length: N - 1 }, (_, i) => ({
       from: `node-${i}`,
-      to:   `node-${i + 1}`,
+      to: `node-${i + 1}`,
     }));
     expect(() => svc.detect(edges)).not.toThrow();
     expect(svc.detect(edges)).toHaveLength(0);
@@ -52,8 +54,10 @@ describe('CycleDetectorService', () => {
 
   it('detects multiple independent cycles', () => {
     const edges = [
-      { from: 'A', to: 'B' }, { from: 'B', to: 'A' }, // cycle 1
-      { from: 'X', to: 'Y' }, { from: 'Y', to: 'X' }, // cycle 2
+      { from: 'A', to: 'B' },
+      { from: 'B', to: 'A' }, // cycle 1
+      { from: 'X', to: 'Y' },
+      { from: 'Y', to: 'X' }, // cycle 2
     ];
     expect(svc.detect(edges)).toHaveLength(2);
   });
@@ -65,15 +69,14 @@ describe('CycleDetectorService', () => {
     ];
     // A self-loop is component of length 1, which the filter excludes
     const cycles = svc.detect(edges);
-    cycles.forEach(c => expect(c.nodes.length).toBeGreaterThan(1));
+    cycles.forEach((c) => expect(c.nodes.length).toBeGreaterThan(1));
   });
-
 
   it('handles a graph with 20 000 nodes in a linear chain without stack overflow', () => {
     const N = 20_000;
     const edges = Array.from({ length: N - 1 }, (_, i) => ({
       from: `n${i}`,
-      to:   `n${i + 1}`,
+      to: `n${i + 1}`,
     }));
     const start = performance.now();
     const cycles = svc.detect(edges);

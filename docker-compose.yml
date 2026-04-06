@@ -49,6 +49,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV:   production
+      RUN_QUEUE_PROCESSOR: "false"
       DB_HOST:    postgres
       DB_PORT:    "5432"
       DB_USER:    ${DB_USER:-postgres}
@@ -77,6 +78,7 @@ services:
     env_file: .env
     environment:
       NODE_ENV:   production
+      RUN_QUEUE_PROCESSOR: "true"
       DB_HOST:    postgres
       DB_PORT:    "5432"
       DB_USER:    ${DB_USER:-postgres}

@@ -11,7 +11,10 @@ describe('TrendService', () => {
     const mod = await Test.createTestingModule({
       providers: [
         TrendService,
-        { provide: getRepositoryToken(AnalysisResultEntity), useValue: mockRepo },
+        {
+          provide: getRepositoryToken(AnalysisResultEntity),
+          useValue: mockRepo,
+        },
       ],
     }).compile();
     svc = mod.get(TrendService);
@@ -27,9 +30,36 @@ describe('TrendService', () => {
 
   it('detects improving trend', async () => {
     mockRepo.find.mockResolvedValue([
-      { id: '1', analyzedAt: new Date(), overallScore: 60, modularityScore: 60, couplingScore: 60, smellsScore: 60, cycleCount: 0, smellCount: 0 },
-      { id: '2', analyzedAt: new Date(), overallScore: 65, modularityScore: 65, couplingScore: 65, smellsScore: 65, cycleCount: 0, smellCount: 0 },
-      { id: '3', analyzedAt: new Date(), overallScore: 72, modularityScore: 72, couplingScore: 72, smellsScore: 72, cycleCount: 0, smellCount: 0 },
+      {
+        id: '1',
+        analyzedAt: new Date(),
+        overallScore: 60,
+        modularityScore: 60,
+        couplingScore: 60,
+        smellsScore: 60,
+        cycleCount: 0,
+        smellCount: 0,
+      },
+      {
+        id: '2',
+        analyzedAt: new Date(),
+        overallScore: 65,
+        modularityScore: 65,
+        couplingScore: 65,
+        smellsScore: 65,
+        cycleCount: 0,
+        smellCount: 0,
+      },
+      {
+        id: '3',
+        analyzedAt: new Date(),
+        overallScore: 72,
+        modularityScore: 72,
+        couplingScore: 72,
+        smellsScore: 72,
+        cycleCount: 0,
+        smellCount: 0,
+      },
     ]);
     const result = await svc.getTrend('url');
     expect(result.trend).toBe('improving');
@@ -39,9 +69,36 @@ describe('TrendService', () => {
 
   it('detects degrading trend', async () => {
     mockRepo.find.mockResolvedValue([
-      { id: '1', analyzedAt: new Date(), overallScore: 80, modularityScore: 80, couplingScore: 80, smellsScore: 80, cycleCount: 0, smellCount: 0 },
-      { id: '2', analyzedAt: new Date(), overallScore: 72, modularityScore: 72, couplingScore: 72, smellsScore: 72, cycleCount: 0, smellCount: 0 },
-      { id: '3', analyzedAt: new Date(), overallScore: 65, modularityScore: 65, couplingScore: 65, smellsScore: 65, cycleCount: 0, smellCount: 0 },
+      {
+        id: '1',
+        analyzedAt: new Date(),
+        overallScore: 80,
+        modularityScore: 80,
+        couplingScore: 80,
+        smellsScore: 80,
+        cycleCount: 0,
+        smellCount: 0,
+      },
+      {
+        id: '2',
+        analyzedAt: new Date(),
+        overallScore: 72,
+        modularityScore: 72,
+        couplingScore: 72,
+        smellsScore: 72,
+        cycleCount: 0,
+        smellCount: 0,
+      },
+      {
+        id: '3',
+        analyzedAt: new Date(),
+        overallScore: 65,
+        modularityScore: 65,
+        couplingScore: 65,
+        smellsScore: 65,
+        cycleCount: 0,
+        smellCount: 0,
+      },
     ]);
     const result = await svc.getTrend('url');
     expect(result.trend).toBe('degrading');

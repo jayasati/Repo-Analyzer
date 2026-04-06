@@ -12,20 +12,22 @@ import { ReportFormat } from './report.types';
  */
 @Injectable()
 export class ReportService {
-
   generate(result: PipelineResult, format: ReportFormat): string {
     switch (format) {
-      case 'markdown': return this.toMarkdown(result);
-      case 'html':     return this.toHtml(result);
+      case 'markdown':
+        return this.toMarkdown(result);
+      case 'html':
+        return this.toHtml(result);
       case 'json':
-      default:         return JSON.stringify(result, null, 2);
+      default:
+        return JSON.stringify(result, null, 2);
     }
   }
 
   // ── Markdown ───────────────────────────────────────────────────────────────
 
   private toMarkdown(r: PipelineResult): string {
-    const score      = r.score.overall;
+    const score = r.score.overall;
     const scoreEmoji = score >= 80 ? '🟢' : score >= 60 ? '🟡' : '🔴';
     const lines: string[] = [];
 
@@ -49,10 +51,14 @@ export class ReportService {
     // Detection
     lines.push('## Detection');
     lines.push('');
-    lines.push(`- **Language**: ${r.detection.languages[0]?.name ?? 'unknown'}`);
+    lines.push(
+      `- **Language**: ${r.detection.languages[0]?.name ?? 'unknown'}`,
+    );
     lines.push(`- **Framework**: ${r.detection.framework ?? 'none'}`);
     lines.push(`- **ORM**: ${r.detection.orm ?? 'none'}`);
-    lines.push(`- **Confidence**: ${Math.round((r.detection.languages[0]?.confidence ?? 0) * 100)}%`);
+    lines.push(
+      `- **Confidence**: ${Math.round((r.detection.languages[0]?.confidence ?? 0) * 100)}%`,
+    );
     lines.push('');
 
     // Metrics
@@ -66,7 +72,9 @@ export class ReportService {
     lines.push(`| Avg Fan-In | ${r.metrics.averageFanIn} |`);
     lines.push(`| Avg Fan-Out | ${r.metrics.averageFanOut} |`);
     lines.push(`| Max Fan-Out | ${r.metrics.maxFanOut} |`);
-    lines.push(`| Density | ${(r.metrics.dependencyDensity * 100).toFixed(1)}% |`);
+    lines.push(
+      `| Density | ${(r.metrics.dependencyDensity * 100).toFixed(1)}% |`,
+    );
     lines.push('');
 
     // Health
@@ -74,12 +82,12 @@ export class ReportService {
     lines.push('');
     if (r.health.strengths.length > 0) {
       lines.push('**Strengths:**');
-      r.health.strengths.forEach(s => lines.push(`- ✅ ${s}`));
+      r.health.strengths.forEach((s) => lines.push(`- ✅ ${s}`));
       lines.push('');
     }
     if (r.health.weaknesses.length > 0) {
       lines.push('**Weaknesses:**');
-      r.health.weaknesses.forEach(w => lines.push(`- ⚠️ ${w}`));
+      r.health.weaknesses.forEach((w) => lines.push(`- ⚠️ ${w}`));
       lines.push('');
     }
 
@@ -89,8 +97,9 @@ export class ReportService {
     if (r.smells.length === 0) {
       lines.push('✅ No architecture smells detected.');
     } else {
-      r.smells.forEach(s => {
-        const icon = s.severity === 'high' ? '🔴' : s.severity === 'medium' ? '🟡' : '⚪';
+      r.smells.forEach((s) => {
+        const icon =
+          s.severity === 'high' ? '🔴' : s.severity === 'medium' ? '🟡' : '⚪';
         lines.push(`${icon} **[${s.type}]** ${s.message}`);
       });
     }
@@ -102,7 +111,7 @@ export class ReportService {
     if (r.cycles.length === 0) {
       lines.push('✅ No circular dependencies detected.');
     } else {
-      r.cycles.forEach(c => lines.push(`- \`${c.nodes.join(' → ')}\``));
+      r.cycles.forEach((c) => lines.push(`- \`${c.nodes.join(' → ')}\``));
     }
     lines.push('');
 
@@ -110,7 +119,7 @@ export class ReportService {
     if (r.hotspots.length > 0) {
       lines.push('## Hotspots');
       lines.push('');
-      r.hotspots.forEach(h => {
+      r.hotspots.forEach((h) => {
         const risk = h.risk === 'high' ? '🔴' : '🟡';
         lines.push(`${risk} **${h.module}** — fan-out: ${h.fanOut}`);
       });
@@ -122,7 +131,9 @@ export class ReportService {
       lines.push('## Closest Architecture Pattern');
       lines.push('');
       const top = r.baseline[0];
-      lines.push(`**${top.name}** (${Math.round(top.similarity * 100)}% match)`);
+      lines.push(
+        `**${top.name}** (${Math.round(top.similarity * 100)}% match)`,
+      );
       lines.push('');
     }
 
@@ -142,8 +153,9 @@ export class ReportService {
   // ── HTML ───────────────────────────────────────────────────────────────────
 
   private toHtml(r: PipelineResult): string {
-    const score      = r.score.overall;
-    const scoreColor = score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
+    const score = r.score.overall;
+    const scoreColor =
+      score >= 80 ? '#22c55e' : score >= 60 ? '#f59e0b' : '#ef4444';
     // const md         = this.toMarkdown(r);
 
     return `<!DOCTYPE html>
@@ -216,29 +228,41 @@ export class ReportService {
   </table>
 
   <h2>Architecture Smells (${r.smells.length})</h2>
-  ${r.smells.length === 0
-    ? '<p class="good">✓ No architecture smells detected</p>'
-    : `<ul>${r.smells.map(s =>
-          `<li><span class="tag tag-${s.severity}">
+  ${
+    r.smells.length === 0
+      ? '<p class="good">✓ No architecture smells detected</p>'
+      : `<ul>${r.smells
+          .map(
+            (s) =>
+              `<li><span class="tag tag-${s.severity}">
             ${this.escapeHtml(s.severity)}
           </span>
           <strong>${this.escapeHtml(s.type)}</strong> —
-          ${this.escapeHtml(s.message)}</li>`
-        ).join('')}</ul>`
+          ${this.escapeHtml(s.message)}</li>`,
+          )
+          .join('')}</ul>`
   }
 
   <h2>Circular Dependencies (${r.cycles.length})</h2>
-  ${r.cycles.length === 0
-    ? '<p class="good">✓ No circular dependencies</p>'
-    : `<ul>${r.cycles.map(c =>
-        `<li><code>${this.escapeHtml(c.nodes.join(' → '))}</code></li>`
-      ).join('')}</ul>`
+  ${
+    r.cycles.length === 0
+      ? '<p class="good">✓ No circular dependencies</p>'
+      : `<ul>${r.cycles
+          .map(
+            (c) =>
+              `<li><code>${this.escapeHtml(c.nodes.join(' → '))}</code></li>`,
+          )
+          .join('')}</ul>`
   }
 
-  ${r.diagrams?.componentDiagram ? `
+  ${
+    r.diagrams?.componentDiagram
+      ? `
   <h2>Component Diagram (PlantUML)</h2>
   <pre>${this.escapeHtml(r.diagrams.componentDiagram)}</pre>
-  ` : ''}
+  `
+      : ''
+  }
 </div>
 </body>
 </html>`;

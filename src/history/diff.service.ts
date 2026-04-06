@@ -2,19 +2,19 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { HistoryService } from './history.service';
 
 export interface AnalysisDiff {
-  from:    { id: string; analyzedAt: Date; score: number };
-  to:      { id: string; analyzedAt: Date; score: number };
+  from: { id: string; analyzedAt: Date; score: number };
+  to: { id: string; analyzedAt: Date; score: number };
   delta: {
-    overallScore:    number;
+    overallScore: number;
     modularityScore: number;
-    couplingScore:   number;
-    smellsScore:     number;
-    cycleCount:      number;
-    smellCount:      number;
-    moduleCount:     number;
+    couplingScore: number;
+    smellsScore: number;
+    cycleCount: number;
+    smellCount: number;
+    moduleCount: number;
   };
-  regression: boolean;  // true if overall score dropped
-  newSmells:  string[]; // smell types present in "to" but not in "from"
+  regression: boolean; // true if overall score dropped
+  newSmells: string[]; // smell types present in "to" but not in "from"
   fixedSmells: string[]; // smell types present in "from" but not in "to"
 }
 
@@ -28,42 +28,43 @@ export class DiffService {
       this.historyService.getById(toId),
     ]);
 
-    if (!fromEntity) throw new NotFoundException(`Analysis ${fromId} not found`);
-    if (!toEntity)   throw new NotFoundException(`Analysis ${toId} not found`);
+    if (!fromEntity)
+      throw new NotFoundException(`Analysis ${fromId} not found`);
+    if (!toEntity) throw new NotFoundException(`Analysis ${toId} not found`);
 
     const fromResult = JSON.parse(fromEntity.fullResult);
-    const toResult   = JSON.parse(toEntity.fullResult);
+    const toResult = JSON.parse(toEntity.fullResult);
 
     const fromSmellTypes = new Set<string>(
-      (fromResult.smells ?? []).map((s: { type: string }) => s.type)
+      (fromResult.smells ?? []).map((s: { type: string }) => s.type),
     );
     const toSmellTypes = new Set<string>(
-      (toResult.smells ?? []).map((s: { type: string }) => s.type)
+      (toResult.smells ?? []).map((s: { type: string }) => s.type),
     );
 
     return {
       from: {
-        id:         fromId,
+        id: fromId,
         analyzedAt: fromEntity.analyzedAt,
-        score:      fromEntity.overallScore,
+        score: fromEntity.overallScore,
       },
       to: {
-        id:         toId,
+        id: toId,
         analyzedAt: toEntity.analyzedAt,
-        score:      toEntity.overallScore,
+        score: toEntity.overallScore,
       },
       delta: {
-        overallScore:    toEntity.overallScore    - fromEntity.overallScore,
+        overallScore: toEntity.overallScore - fromEntity.overallScore,
         modularityScore: toEntity.modularityScore - fromEntity.modularityScore,
-        couplingScore:   toEntity.couplingScore   - fromEntity.couplingScore,
-        smellsScore:     toEntity.smellsScore     - fromEntity.smellsScore,
-        cycleCount:      toEntity.cycleCount      - fromEntity.cycleCount,
-        smellCount:      toEntity.smellCount      - fromEntity.smellCount,
-        moduleCount:     toEntity.moduleCount     - fromEntity.moduleCount,
+        couplingScore: toEntity.couplingScore - fromEntity.couplingScore,
+        smellsScore: toEntity.smellsScore - fromEntity.smellsScore,
+        cycleCount: toEntity.cycleCount - fromEntity.cycleCount,
+        smellCount: toEntity.smellCount - fromEntity.smellCount,
+        moduleCount: toEntity.moduleCount - fromEntity.moduleCount,
       },
-      regression:  toEntity.overallScore < fromEntity.overallScore,
-      newSmells:   [...toSmellTypes].filter(t => !fromSmellTypes.has(t)),
-      fixedSmells: [...fromSmellTypes].filter(t => !toSmellTypes.has(t)),
+      regression: toEntity.overallScore < fromEntity.overallScore,
+      newSmells: [...toSmellTypes].filter((t) => !fromSmellTypes.has(t)),
+      fixedSmells: [...fromSmellTypes].filter((t) => !toSmellTypes.has(t)),
     };
   }
 }

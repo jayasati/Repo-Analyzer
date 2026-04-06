@@ -2,7 +2,9 @@ import { PlantUmlRendererService } from './plantuml-renderer.service';
 
 describe('PlantUmlRendererService', () => {
   let svc: PlantUmlRendererService;
-  beforeEach(() => { svc = new PlantUmlRendererService(); });
+  beforeEach(() => {
+    svc = new PlantUmlRendererService();
+  });
 
   describe('renderClassDiagram', () => {
     it('returns empty diagram when no nodes', () => {
@@ -12,7 +14,9 @@ describe('PlantUmlRendererService', () => {
 
     it('emits @startuml and @enduml', () => {
       const result = svc.renderClassDiagram({
-        nodes: [{ id: 'UserController', type: 'controller', source: 'semantic' }],
+        nodes: [
+          { id: 'UserController', type: 'controller', source: 'semantic' },
+        ],
         edges: [],
       });
       expect(result).toContain('@startuml');
@@ -21,7 +25,9 @@ describe('PlantUmlRendererService', () => {
 
     it('adds <<Controller>> stereotype for controller nodes', () => {
       const result = svc.renderClassDiagram({
-        nodes: [{ id: 'UserController', type: 'controller', source: 'semantic' }],
+        nodes: [
+          { id: 'UserController', type: 'controller', source: 'semantic' },
+        ],
         edges: [],
       });
       expect(result).toContain('<<Controller>>');
@@ -29,7 +35,9 @@ describe('PlantUmlRendererService', () => {
 
     it('sanitizes special characters in identifiers', () => {
       const result = svc.renderClassDiagram({
-        nodes: [{ id: 'some/path/Service.ts', type: 'service', source: 'semantic' }],
+        nodes: [
+          { id: 'some/path/Service.ts', type: 'service', source: 'semantic' },
+        ],
         edges: [],
       });
       // Should not contain slashes or dots in identifiers
@@ -39,7 +47,7 @@ describe('PlantUmlRendererService', () => {
     it('deduplicates edges', () => {
       const result = svc.renderClassDiagram({
         nodes: [
-          { id: 'A', type: 'service',    source: 'semantic' },
+          { id: 'A', type: 'service', source: 'semantic' },
           { id: 'B', type: 'controller', source: 'semantic' },
         ],
         edges: [
@@ -63,7 +71,9 @@ describe('PlantUmlRendererService', () => {
 
     it('wraps in package when more than 8 nodes', () => {
       const nodes = Array.from({ length: 9 }, (_, i) => ({
-        id: `Module${i}`, type: 'module' as const, source: 'semantic' as const,
+        id: `Module${i}`,
+        type: 'module' as const,
+        source: 'semantic' as const,
       }));
       const result = svc.renderComponentDiagram({ nodes, edges: [] });
       expect(result).toContain('package');
@@ -81,7 +91,9 @@ describe('PlantUmlRendererService', () => {
 
     it('uses actor for controller nodes', () => {
       const result = svc.renderSequenceDiagram({
-        nodes: [{ id: 'UserController', type: 'controller', source: 'semantic' }],
+        nodes: [
+          { id: 'UserController', type: 'controller', source: 'semantic' },
+        ],
         edges: [],
       });
       expect(result).toContain('actor');
@@ -91,7 +103,7 @@ describe('PlantUmlRendererService', () => {
       const result = svc.renderSequenceDiagram({
         nodes: [
           { id: 'A', type: 'controller', source: 'semantic' },
-          { id: 'B', type: 'service',    source: 'semantic' },
+          { id: 'B', type: 'service', source: 'semantic' },
         ],
         edges: [{ from: 'A', to: 'B', type: 'constructor-injection' }],
       });

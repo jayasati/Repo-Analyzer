@@ -1,6 +1,6 @@
 export type ReportFormat = 'markdown' | 'html' | 'json';
 
 export interface ReportOptions {
-  format:      ReportFormat;
+  format: ReportFormat;
   includeCode: boolean; // include PlantUML source blocks
 }

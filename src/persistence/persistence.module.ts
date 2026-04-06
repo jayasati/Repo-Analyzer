@@ -4,8 +4,8 @@ import { AnalysisResultEntity } from './entities/analysis-result.entity';
 import { PersistenceService } from './persistence.service';
 
 @Module({
-  imports:   [TypeOrmModule.forFeature([AnalysisResultEntity])],
+  imports: [TypeOrmModule.forFeature([AnalysisResultEntity])],
   providers: [PersistenceService],
-  exports:   [PersistenceService],
+  exports: [PersistenceService],
 })
 export class PersistenceModule {}

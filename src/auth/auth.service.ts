@@ -1,5 +1,7 @@
 import {
-  ForbiddenException, Injectable, UnauthorizedException,
+  ForbiddenException,
+  Injectable,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
@@ -26,7 +28,10 @@ export class AuthService {
     const user = await this.usersService.findByEmailWithPassword(dto.email);
     if (!user) throw new UnauthorizedException('Invalid credentials');
 
-    const valid = await this.usersService.validatePassword(dto.password, user.password);
+    const valid = await this.usersService.validatePassword(
+      dto.password,
+      user.password,
+    );
     if (!valid) throw new UnauthorizedException('Invalid credentials');
 
     return { accessToken: this.sign(this.toPayload(user)) };
@@ -39,29 +44,31 @@ export class AuthService {
     return { accessToken: this.sign(user), user };
   }
 
-  async listGithubReposForUser(userId: string): Promise<{
-    name: string;
-    fullName: string;
-    isPrivate: boolean;
-    defaultBranch: string;
-  }[]> {
+  async listGithubReposForUser(userId: string): Promise<
+    {
+      name: string;
+      fullName: string;
+      isPrivate: boolean;
+      defaultBranch: string;
+    }[]
+  > {
     const token = await this.usersService.getGithubAccessTokenIfPresent(userId);
     if (!token) {
       throw new ForbiddenException('GitHub account not linked');
     }
     const repos = await this.githubApi.listUserRepos(token);
-    return repos.map(r => ({
-      name:          r.name,
-      fullName:      r.full_name,
-      isPrivate:     r.private,
+    return repos.map((r) => ({
+      name: r.name,
+      fullName: r.full_name,
+      isPrivate: r.private,
       defaultBranch: r.default_branch,
     }));
   }
 
   async listGithubRepoBranches(
     userId: string,
-    owner:  string,
-    repo:   string,
+    owner: string,
+    repo: string,
   ): Promise<{ name: string }[]> {
     const token = await this.usersService.getGithubAccessTokenIfPresent(userId);
     if (!token) {
@@ -70,15 +77,19 @@ export class AuthService {
     return this.githubApi.listBranches(token, owner, repo);
   }
 
-  private toPayload(user: { id: string; email: string; role: string }): AuthUserPayload {
+  private toPayload(user: {
+    id: string;
+    email: string;
+    role: string;
+  }): AuthUserPayload {
     return { id: user.id, email: user.email, role: user.role };
   }
 
   private sign(user: AuthUserPayload): string {
     return this.jwtService.sign({
-      sub:   user.id,
+      sub: user.id,
       email: user.email,
-      role:  user.role,
+      role: user.role,
     });
   }
 }

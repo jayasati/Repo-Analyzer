@@ -1,4 +1,3 @@
-
 // Architectural Risk Score formula:
 //
 //   risk(module) = w_centrality × centrality(module)
@@ -19,16 +18,16 @@
 //   risk ≥ 0.8  →  🔴 CRITICAL
 
 import { Injectable } from '@nestjs/common';
-import { ChurnEntry }  from './git-churn.service';
+import { ChurnEntry } from './git-churn.service';
 
 export interface RiskZone {
-  module:      string;
-  riskScore:   number;
-  level:       'low' | 'medium' | 'high' | 'critical';
+  module: string;
+  riskScore: number;
+  level: 'low' | 'medium' | 'high' | 'critical';
   factors: {
     centrality: number;
-    churn:      number;
-    coupling:   number;
+    churn: number;
+    coupling: number;
   };
   /** Human-readable explanation for this module's risk */
   explanation: string;
@@ -37,51 +36,51 @@ export interface RiskZone {
 }
 
 export interface RiskReport {
-  zones:       RiskZone[];
+  zones: RiskZone[];
   criticalCount: number;
-  highCount:     number;
-  summary:       string;
+  highCount: number;
+  summary: string;
 }
 
 const WEIGHTS = {
-  centrality: 0.40,
-  churn:      0.35,
-  coupling:   0.25,
+  centrality: 0.4,
+  churn: 0.35,
+  coupling: 0.25,
 } as const;
 
 @Injectable()
 export class RiskScorerService {
-
   compute(
     packageEdges: { from: string; to: string }[],
-    churnData:    ChurnEntry[],
+    churnData: ChurnEntry[],
   ): RiskReport {
     // ── Build per-module stats ───────────────────────────────────────────────
-    const fanIn  = new Map<string, number>();
+    const fanIn = new Map<string, number>();
     const fanOut = new Map<string, number>();
     const modules = new Set<string>();
 
     for (const { from, to } of packageEdges) {
-      modules.add(from); modules.add(to);
-      fanIn.set(to,   (fanIn.get(to)   ?? 0) + 1);
-      fanOut.set(from,(fanOut.get(from) ?? 0) + 1);
+      modules.add(from);
+      modules.add(to);
+      fanIn.set(to, (fanIn.get(to) ?? 0) + 1);
+      fanOut.set(from, (fanOut.get(from) ?? 0) + 1);
     }
 
-    const maxFanIn  = Math.max(...Array.from(fanIn.values()),  1);
+    const maxFanIn = Math.max(...Array.from(fanIn.values()), 1);
     const maxFanOut = Math.max(...Array.from(fanOut.values()), 1);
 
-    const churnMap = new Map(churnData.map(c => [c.module, c.churnScore]));
+    const churnMap = new Map(churnData.map((c) => [c.module, c.churnScore]));
 
     // ── Score each module ────────────────────────────────────────────────────
-    const zones: RiskZone[] = Array.from(modules).map(module => {
-      const centrality = (fanIn.get(module)  ?? 0) / maxFanIn;
-      const coupling   = (fanOut.get(module) ?? 0) / maxFanOut;
-      const churn      = churnMap.get(module) ?? 0;
+    const zones: RiskZone[] = Array.from(modules).map((module) => {
+      const centrality = (fanIn.get(module) ?? 0) / maxFanIn;
+      const coupling = (fanOut.get(module) ?? 0) / maxFanOut;
+      const churn = churnMap.get(module) ?? 0;
 
       const riskScore =
         WEIGHTS.centrality * centrality +
-        WEIGHTS.churn      * churn      +
-        WEIGHTS.coupling   * coupling;
+        WEIGHTS.churn * churn +
+        WEIGHTS.coupling * coupling;
 
       const level = this.toLevel(riskScore);
 
@@ -91,18 +90,18 @@ export class RiskScorerService {
         level,
         factors: {
           centrality: Number(centrality.toFixed(3)),
-          churn:      Number(churn.toFixed(3)),
-          coupling:   Number(coupling.toFixed(3)),
+          churn: Number(churn.toFixed(3)),
+          coupling: Number(coupling.toFixed(3)),
         },
-        explanation:    this.explain(module, centrality, churn, coupling),
+        explanation: this.explain(module, centrality, churn, coupling),
         recommendation: this.recommend(level, centrality, churn, coupling),
       };
     });
 
     zones.sort((a, b) => b.riskScore - a.riskScore);
 
-    const criticalCount = zones.filter(z => z.level === 'critical').length;
-    const highCount     = zones.filter(z => z.level === 'high').length;
+    const criticalCount = zones.filter((z) => z.level === 'critical').length;
+    const highCount = zones.filter((z) => z.level === 'high').length;
 
     return {
       zones,
@@ -122,26 +121,35 @@ export class RiskScorerService {
   }
 
   private explain(
-    module:      string,
-    centrality:  number,
-    churn:       number,
-    coupling:    number,
+    module: string,
+    centrality: number,
+    churn: number,
+    coupling: number,
   ): string {
     const parts: string[] = [];
-    if (centrality > 0.6) parts.push(`heavily depended on by other modules (centrality: ${(centrality * 100).toFixed(0)}%)`);
-    if (churn      > 0.6) parts.push(`changes very frequently (churn: ${(churn * 100).toFixed(0)}% of max)`);
-    if (coupling   > 0.6) parts.push(`has many outgoing dependencies (coupling: ${(coupling * 100).toFixed(0)}%)`);
+    if (centrality > 0.6)
+      parts.push(
+        `heavily depended on by other modules (centrality: ${(centrality * 100).toFixed(0)}%)`,
+      );
+    if (churn > 0.6)
+      parts.push(
+        `changes very frequently (churn: ${(churn * 100).toFixed(0)}% of max)`,
+      );
+    if (coupling > 0.6)
+      parts.push(
+        `has many outgoing dependencies (coupling: ${(coupling * 100).toFixed(0)}%)`,
+      );
     if (parts.length === 0) return `${module} has low risk across all factors.`;
     return `${module} is risky because it is ${parts.join(' and ')}.`;
   }
 
   private recommend(
-    level:      RiskZone['level'],
+    level: RiskZone['level'],
     centrality: number,
-    churn:      number,
-    coupling:   number,
+    churn: number,
+    coupling: number,
   ): string {
-    if (level === 'low')    return 'No action required.';
+    if (level === 'low') return 'No action required.';
     if (centrality > churn && centrality > coupling) {
       return 'Many modules depend on this one — introduce an interface or facade to isolate consumers from changes.';
     }
@@ -151,8 +159,13 @@ export class RiskScorerService {
     return 'High fan-out detected — apply Dependency Inversion: depend on abstractions rather than concrete modules.';
   }
 
-  private buildSummary(zones: RiskZone[], critical: number, high: number): string {
-    if (critical === 0 && high === 0) return '✅ No high-risk architectural zones detected.';
+  private buildSummary(
+    zones: RiskZone[],
+    critical: number,
+    high: number,
+  ): string {
+    if (critical === 0 && high === 0)
+      return '✅ No high-risk architectural zones detected.';
     const top = zones[0];
     return `🔴 ${critical} critical + 🟠 ${high} high-risk module(s). Top risk: ${top.module} (score: ${top.riskScore}).`;
   }

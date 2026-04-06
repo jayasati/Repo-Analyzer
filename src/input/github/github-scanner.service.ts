@@ -1,11 +1,11 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common';
-import * as path      from 'path';
-import * as fs        from 'fs-extra';
-import * as fsNative  from 'fs/promises';
-import simpleGit      from 'simple-git';
+import * as path from 'path';
+import * as fs from 'fs-extra';
+import * as fsNative from 'fs/promises';
+import simpleGit from 'simple-git';
 import { randomUUID } from 'crypto';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
-import { APP_CONSTANTS }    from '../../common/constants/app.constants';
+import { APP_CONSTANTS } from '../../common/constants/app.constants';
 
 export interface CloneOptions {
   branch?: string;
@@ -32,11 +32,7 @@ export class GithubScannerService {
       'GithubScannerService',
     );
 
-    const cloneArgs = [
-      '--depth',         '1',
-      '--single-branch',
-      '--no-tags',
-    ];
+    const cloneArgs = ['--depth', '1', '--single-branch', '--no-tags'];
 
     // Add branch flag only if specified — simpleGit uses default branch otherwise
     if (branch) {
@@ -46,7 +42,12 @@ export class GithubScannerService {
     const clonePromise = simpleGit().clone(repoUrl, tempDir, cloneArgs);
     const timeoutPromise = new Promise<never>((_, reject) =>
       setTimeout(
-        () => reject(new Error(`Clone timed out after ${APP_CONSTANTS.CLONE_TIMEOUT_MS / 1000}s`)),
+        () =>
+          reject(
+            new Error(
+              `Clone timed out after ${APP_CONSTANTS.CLONE_TIMEOUT_MS / 1000}s`,
+            ),
+          ),
         APP_CONSTANTS.CLONE_TIMEOUT_MS,
       ),
     );
@@ -82,7 +83,10 @@ export class GithubScannerService {
           `Subdirectory "${subdir}" does not exist in the repository`,
         );
       }
-      this.logger.log(`Using subdirectory: ${subdirPath}`, 'GithubScannerService');
+      this.logger.log(
+        `Using subdirectory: ${subdirPath}`,
+        'GithubScannerService',
+      );
       return subdirPath;
     }
 
@@ -92,14 +96,18 @@ export class GithubScannerService {
   async safeRemove(dirPath: string): Promise<void> {
     // Walk up to find the .tmp root if we returned a subdir
     const tmpRoot = dirPath.includes('.tmp')
-      ? dirPath.slice(0, dirPath.indexOf('.tmp') + dirPath.slice(dirPath.indexOf('.tmp')).indexOf(path.sep, 1))
+      ? dirPath.slice(
+          0,
+          dirPath.indexOf('.tmp') +
+            dirPath.slice(dirPath.indexOf('.tmp')).indexOf(path.sep, 1),
+        )
       : dirPath;
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
     try {
       await fsNative.rm(tmpRoot, {
-        recursive:  true,
-        force:      true,
+        recursive: true,
+        force: true,
         maxRetries: 5,
         retryDelay: 300,
       });
@@ -113,7 +121,14 @@ export class GithubScannerService {
 
   private async countFiles(dirPath: string): Promise<number> {
     let count = 0;
-    const IGNORED = new Set(['node_modules', '.git', 'dist', 'build', 'target', 'vendor']);
+    const IGNORED = new Set([
+      'node_modules',
+      '.git',
+      'dist',
+      'build',
+      'target',
+      'vendor',
+    ]);
     const walk = async (dir: string): Promise<void> => {
       const entries = await fsNative.readdir(dir, { withFileTypes: true });
       for (const entry of entries) {

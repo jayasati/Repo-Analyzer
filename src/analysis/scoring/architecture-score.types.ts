@@ -1,5 +1,4 @@
 export interface ArchitectureScore {
-
   overall: number;
 
   breakdown: {
@@ -10,5 +9,4 @@ export interface ArchitectureScore {
 
   /** True when graph extraction returned no package edges — no meaningful data to score. */
   noData?: boolean;
-
 }

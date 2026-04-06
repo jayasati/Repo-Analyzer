@@ -1,5 +1,4 @@
 export interface ArchitectureMetrics {
-
   moduleCount: number;
 
   dependencyCount: number;
@@ -13,5 +12,4 @@ export interface ArchitectureMetrics {
   dependencyDensity: number;
 
   maxFanOut: number;
-
 }

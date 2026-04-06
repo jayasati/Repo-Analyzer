@@ -11,7 +11,9 @@ describe('parseGithubRepoFullName', () => {
   });
 
   it('parses https URL', () => {
-    expect(parseGithubRepoFullName('https://github.com/octocat/Hello-World')).toEqual({
+    expect(
+      parseGithubRepoFullName('https://github.com/octocat/Hello-World'),
+    ).toEqual({
       owner: 'octocat',
       repo: 'Hello-World',
       fullName: 'octocat/Hello-World',
@@ -19,7 +21,9 @@ describe('parseGithubRepoFullName', () => {
   });
 
   it('parses URL with .git suffix', () => {
-    expect(parseGithubRepoFullName('https://github.com/octocat/Hello-World.git')).toEqual({
+    expect(
+      parseGithubRepoFullName('https://github.com/octocat/Hello-World.git'),
+    ).toEqual({
       owner: 'octocat',
       repo: 'Hello-World',
       fullName: 'octocat/Hello-World',
@@ -27,6 +31,8 @@ describe('parseGithubRepoFullName', () => {
   });
 
   it('rejects invalid input', () => {
-    expect(() => parseGithubRepoFullName('not-a-repo')).toThrow(BadRequestException);
+    expect(() => parseGithubRepoFullName('not-a-repo')).toThrow(
+      BadRequestException,
+    );
   });
 });

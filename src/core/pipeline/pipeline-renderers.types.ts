@@ -1,4 +1,4 @@
-import { DiagramPrepService }      from '../../diagram/diagram-prep.service';
+import { DiagramPrepService } from '../../diagram/diagram-prep.service';
 import { PlantUmlRendererService } from '../../diagram/plantuml-renderer.service';
 
 /**
@@ -7,5 +7,5 @@ import { PlantUmlRendererService } from '../../diagram/plantuml-renderer.service
  */
 export interface PipelineRenderers {
   diagramPrep: DiagramPrepService;
-  renderer:    PlantUmlRendererService;
+  renderer: PlantUmlRendererService;
 }

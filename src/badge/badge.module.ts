@@ -4,7 +4,7 @@ import { AnalysisResultEntity } from '../persistence/entities/analysis-result.en
 import { BadgeController } from './badge.controller';
 
 @Module({
-  imports:     [TypeOrmModule.forFeature([AnalysisResultEntity])],
+  imports: [TypeOrmModule.forFeature([AnalysisResultEntity])],
   controllers: [BadgeController],
 })
 export class BadgeModule {}

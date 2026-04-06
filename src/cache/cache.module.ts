@@ -7,7 +7,8 @@ import Redis from 'ioredis';
   providers: [
     {
       provide: 'REDIS_CLIENT',
-      useFactory: () => new Redis({ host: process.env.REDIS_HOST ?? 'localhost', port: 6379 }),
+      useFactory: () =>
+        new Redis({ host: process.env.REDIS_HOST ?? 'localhost', port: 6379 }),
     },
     AnalysisCacheService,
   ],

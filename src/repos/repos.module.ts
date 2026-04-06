@@ -13,6 +13,6 @@ import { ANALYSIS_QUEUE } from '../queue/queue.constants';
     BullModule.registerQueue({ name: ANALYSIS_QUEUE }),
   ],
   controllers: [ReposController],
-  providers:   [ReposService],
+  providers: [ReposService],
 })
 export class ReposModule {}

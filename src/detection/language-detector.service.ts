@@ -6,39 +6,63 @@ import { DetectionResult, DetectedLanguage } from './detection-result.type';
 
 export type DetectedFramework =
   // TypeScript / JavaScript
-  | 'nestjs' | 'nextjs' | 'angular' | 'express' | 'fastify' | 'koa'
+  | 'nestjs'
+  | 'nextjs'
+  | 'angular'
+  | 'express'
+  | 'fastify'
+  | 'koa'
   // Python
-  | 'django' | 'flask' | 'fastapi'
+  | 'django'
+  | 'flask'
+  | 'fastapi'
   // Java / Kotlin
-  | 'spring' | 'micronaut' | 'ktor'
+  | 'spring'
+  | 'micronaut'
+  | 'ktor'
   // Go
-  | 'gin' | 'fiber' | 'echo'
+  | 'gin'
+  | 'fiber'
+  | 'echo'
   // Ruby
-  | 'rails' | 'sinatra'
+  | 'rails'
+  | 'sinatra'
   // PHP
-  | 'laravel' | 'symfony'
+  | 'laravel'
+  | 'symfony'
   // Rust
-  | 'actix' | 'axum' | 'rocket'
+  | 'actix'
+  | 'axum'
+  | 'rocket'
   // Swift
   | 'vapor'
   // Elixir
   | 'phoenix'
   // Scala
-  | 'play' | 'akka'
+  | 'play'
+  | 'akka'
   // Dart
   | 'flutter'
   // .NET
   | 'aspnet';
 
 export type DetectedOrm =
-  | 'prisma' | 'typeorm' | 'sequelize' | 'mongoose'       // JS/TS ORMs
-  | 'hibernate' | 'jpa'                                    // Java
-  | 'sqlalchemy' | 'django-orm'                            // Python
-  | 'activerecord'                                         // Ruby
-  | 'eloquent'                                             // PHP
-  | 'diesel' | 'sqlx'                                      // Rust
-  | 'exposed' | 'ktorm'                                    // Kotlin
-  | 'slick' | 'doobie';                                    // Scala
+  | 'prisma'
+  | 'typeorm'
+  | 'sequelize'
+  | 'mongoose' // JS/TS ORMs
+  | 'hibernate'
+  | 'jpa' // Java
+  | 'sqlalchemy'
+  | 'django-orm' // Python
+  | 'activerecord' // Ruby
+  | 'eloquent' // PHP
+  | 'diesel'
+  | 'sqlx' // Rust
+  | 'exposed'
+  | 'ktorm' // Kotlin
+  | 'slick'
+  | 'doobie'; // Scala
 
 // ── Fingerprint declarations ───────────────────────────────────────────────────
 //
@@ -70,7 +94,13 @@ const FRAMEWORK_FINGERPRINTS: FrameworkFingerprint[] = [
   },
   {
     framework: 'nextjs',
-    fileSignals: ['next.config.js', 'next.config.ts', 'next.config.mjs', 'pages/_app', 'app/layout.tsx'],
+    fileSignals: [
+      'next.config.js',
+      'next.config.ts',
+      'next.config.mjs',
+      'pages/_app',
+      'app/layout.tsx',
+    ],
     packageSignals: ['next'],
   },
   {
@@ -119,7 +149,12 @@ const FRAMEWORK_FINGERPRINTS: FrameworkFingerprint[] = [
   },
   {
     framework: 'spring',
-    fileSignals: ['pom.xml', 'build.gradle', 'application.properties', 'application.yml'],
+    fileSignals: [
+      'pom.xml',
+      'build.gradle',
+      'application.properties',
+      'application.yml',
+    ],
     packageSignals: ['spring-boot', 'org.springframework'],
   },
   {
@@ -148,7 +183,12 @@ const FRAMEWORK_FINGERPRINTS: FrameworkFingerprint[] = [
   // ── Ruby ──────────────────────────────────────────────────────────────────
   {
     framework: 'rails',
-    fileSignals: ['Gemfile', 'config/routes.rb', 'app/controllers', 'app/models'],
+    fileSignals: [
+      'Gemfile',
+      'config/routes.rb',
+      'app/controllers',
+      'app/models',
+    ],
     packageSignals: ['rails'],
   },
   {
@@ -229,25 +269,57 @@ const FRAMEWORK_FINGERPRINTS: FrameworkFingerprint[] = [
 
 // ORM fingerprints
 const ORM_FINGERPRINTS: OrmFingerprint[] = [
-  { orm: 'prisma',      fileSignals: ['schema.prisma'],                         packageSignals: ['@prisma/client'] },
-  { orm: 'typeorm',     fileSignals: [],                                         packageSignals: ['typeorm'] },
-  { orm: 'sequelize',   fileSignals: [],                                         packageSignals: ['sequelize'] },
-  { orm: 'mongoose',    fileSignals: [],                                         packageSignals: ['mongoose'] },
-  { orm: 'hibernate',   fileSignals: ['hibernate.cfg.xml'],                     packageSignals: ['hibernate'] },
-  { orm: 'sqlalchemy',  fileSignals: [],                                         packageSignals: ['sqlalchemy', 'SQLAlchemy'] },
-  { orm: 'django-orm',  fileSignals: ['models.py'],                             packageSignals: ['Django'] },
-  { orm: 'activerecord',fileSignals: ['Gemfile'],                                packageSignals: ['activerecord'] },
-  { orm: 'eloquent',    fileSignals: ['app/Models'],                            packageSignals: ['laravel/framework'] },
-  { orm: 'diesel',      fileSignals: ['Cargo.toml'],                            packageSignals: ['diesel'] },
-  { orm: 'sqlx',        fileSignals: ['Cargo.toml'],                            packageSignals: ['sqlx'] },
-  { orm: 'exposed',     fileSignals: ['build.gradle'],                          packageSignals: ['org.jetbrains.exposed'] },
-  { orm: 'slick',       fileSignals: ['build.sbt'],                             packageSignals: ['com.typesafe.slick'] },
+  {
+    orm: 'prisma',
+    fileSignals: ['schema.prisma'],
+    packageSignals: ['@prisma/client'],
+  },
+  { orm: 'typeorm', fileSignals: [], packageSignals: ['typeorm'] },
+  { orm: 'sequelize', fileSignals: [], packageSignals: ['sequelize'] },
+  { orm: 'mongoose', fileSignals: [], packageSignals: ['mongoose'] },
+  {
+    orm: 'hibernate',
+    fileSignals: ['hibernate.cfg.xml'],
+    packageSignals: ['hibernate'],
+  },
+  {
+    orm: 'sqlalchemy',
+    fileSignals: [],
+    packageSignals: ['sqlalchemy', 'SQLAlchemy'],
+  },
+  { orm: 'django-orm', fileSignals: ['models.py'], packageSignals: ['Django'] },
+  {
+    orm: 'activerecord',
+    fileSignals: ['Gemfile'],
+    packageSignals: ['activerecord'],
+  },
+  {
+    orm: 'eloquent',
+    fileSignals: ['app/Models'],
+    packageSignals: ['laravel/framework'],
+  },
+  { orm: 'diesel', fileSignals: ['Cargo.toml'], packageSignals: ['diesel'] },
+  { orm: 'sqlx', fileSignals: ['Cargo.toml'], packageSignals: ['sqlx'] },
+  {
+    orm: 'exposed',
+    fileSignals: ['build.gradle'],
+    packageSignals: ['org.jetbrains.exposed'],
+  },
+  {
+    orm: 'slick',
+    fileSignals: ['build.sbt'],
+    packageSignals: ['com.typesafe.slick'],
+  },
 ];
 
 // ── Extension → language name map ─────────────────────────────────────────────
 const EXT_TO_LANGUAGE_NAME: Readonly<Record<string, string>> = {
-  '.ts': 'TypeScript', '.tsx': 'TypeScript',
-  '.js': 'JavaScript', '.jsx': 'JavaScript', '.mjs': 'JavaScript', '.cjs': 'JavaScript',
+  '.ts': 'TypeScript',
+  '.tsx': 'TypeScript',
+  '.js': 'JavaScript',
+  '.jsx': 'JavaScript',
+  '.mjs': 'JavaScript',
+  '.cjs': 'JavaScript',
   '.py': 'Python',
   '.java': 'Java',
   '.go': 'Go',
@@ -255,13 +327,20 @@ const EXT_TO_LANGUAGE_NAME: Readonly<Record<string, string>> = {
   '.rb': 'Ruby',
   '.php': 'PHP',
   '.rs': 'Rust',
-  '.kt': 'Kotlin', '.kts': 'Kotlin',
+  '.kt': 'Kotlin',
+  '.kts': 'Kotlin',
   '.swift': 'Swift',
-  '.scala': 'Scala', '.sc': 'Scala',
+  '.scala': 'Scala',
+  '.sc': 'Scala',
   '.dart': 'Dart',
-  '.ex': 'Elixir', '.exs': 'Elixir',
-  '.c': 'C', '.h': 'C',
-  '.cpp': 'C++', '.cc': 'C++', '.cxx': 'C++', '.hpp': 'C++',
+  '.ex': 'Elixir',
+  '.exs': 'Elixir',
+  '.c': 'C',
+  '.h': 'C',
+  '.cpp': 'C++',
+  '.cc': 'C++',
+  '.cxx': 'C++',
+  '.hpp': 'C++',
 };
 
 // ── Updated DetectionResult type ──────────────────────────────────────────────
@@ -269,15 +348,15 @@ const EXT_TO_LANGUAGE_NAME: Readonly<Record<string, string>> = {
 
 @Injectable()
 export class LanguageDetectorService {
-
   // ── Public API ──────────────────────────────────────────────────────────────
 
   detect(fileTree: FileNode): DetectionResult {
-    const { extMap, allPaths, packageFileContent } = this.collectFileInfo(fileTree);
+    const { extMap, allPaths, packageFileContent } =
+      this.collectFileInfo(fileTree);
 
-    const languages   = this.detectLanguages(extMap);
-    const framework   = this.detectFramework(allPaths, packageFileContent);
-    const orm         = this.detectOrm(allPaths, packageFileContent);
+    const languages = this.detectLanguages(extMap);
+    const framework = this.detectFramework(allPaths, packageFileContent);
+    const orm = this.detectOrm(allPaths, packageFileContent);
     const analysisDepth = framework ? 'framework' : 'structural';
 
     return { languages, framework, orm, analysisDepth };
@@ -337,7 +416,7 @@ export class LanguageDetectorService {
         name,
         confidence: Number((count / total).toFixed(2)),
       }))
-      .filter(l => l.confidence > 0)
+      .filter((l) => l.confidence > 0)
       .sort((a, b) => b.confidence - a.confidence);
   }
 
@@ -347,16 +426,17 @@ export class LanguageDetectorService {
     allPaths: string[],
     packageFileContent: string,
   ): DetectedFramework | undefined {
-    const normalizedPaths = allPaths.map(p => p.replace(/\\/g, '/'));
+    const normalizedPaths = allPaths.map((p) => p.replace(/\\/g, '/'));
 
     for (const fp of FRAMEWORK_FINGERPRINTS) {
-      const fileMatch = fp.fileSignals.some(signal =>
-        normalizedPaths.some(p => p.includes(signal))
+      const fileMatch = fp.fileSignals.some((signal) =>
+        normalizedPaths.some((p) => p.includes(signal)),
       );
 
-      const packageMatch = fp.packageSignals?.some(signal =>
-        packageFileContent.includes(signal)
-      ) ?? false;
+      const packageMatch =
+        fp.packageSignals?.some((signal) =>
+          packageFileContent.includes(signal),
+        ) ?? false;
 
       // A match requires either a file signal OR a package signal to fire.
       // For frameworks with no fileSignals (e.g. gin, fiber) only packageSignals matter.
@@ -381,15 +461,16 @@ export class LanguageDetectorService {
     allPaths: string[],
     packageFileContent: string,
   ): DetectedOrm | undefined {
-    const normalizedPaths = allPaths.map(p => p.replace(/\\/g, '/'));
+    const normalizedPaths = allPaths.map((p) => p.replace(/\\/g, '/'));
 
     for (const fp of ORM_FINGERPRINTS) {
-      const fileMatch = fp.fileSignals.some(signal =>
-        normalizedPaths.some(p => p.includes(signal))
+      const fileMatch = fp.fileSignals.some((signal) =>
+        normalizedPaths.some((p) => p.includes(signal)),
       );
-      const packageMatch = fp.packageSignals?.some(signal =>
-        packageFileContent.includes(signal)
-      ) ?? false;
+      const packageMatch =
+        fp.packageSignals?.some((signal) =>
+          packageFileContent.includes(signal),
+        ) ?? false;
 
       if (fileMatch || packageMatch) return fp.orm;
     }
@@ -401,26 +482,30 @@ export class LanguageDetectorService {
 
   private isPackageManifest(filePath: string): boolean {
     const name = filePath.replace(/\\/g, '/').split('/').pop() ?? '';
-    return [
-      'package.json',       // JS/TS
-      'requirements.txt',   // Python
-      'Pipfile',            // Python
-      'pyproject.toml',     // Python
-      'pom.xml',            // Java/Kotlin/Scala
-      'build.gradle',       // Java/Kotlin
-      'build.gradle.kts',   // Kotlin
-      'build.sbt',          // Scala
-      'go.mod',             // Go
-      'Cargo.toml',         // Rust
-      'Gemfile',            // Ruby
-      'composer.json',      // PHP
-      'Package.swift',      // Swift
-      'pubspec.yaml',       // Dart
-      'mix.exs',            // Elixir
-      'mix.lock',           // Elixir
-      '.csproj',            // C#
-      'micronaut-cli.yml',  // Micronaut
-    ].includes(name) || name.endsWith('.csproj') || name.endsWith('.fsproj');
+    return (
+      [
+        'package.json', // JS/TS
+        'requirements.txt', // Python
+        'Pipfile', // Python
+        'pyproject.toml', // Python
+        'pom.xml', // Java/Kotlin/Scala
+        'build.gradle', // Java/Kotlin
+        'build.gradle.kts', // Kotlin
+        'build.sbt', // Scala
+        'go.mod', // Go
+        'Cargo.toml', // Rust
+        'Gemfile', // Ruby
+        'composer.json', // PHP
+        'Package.swift', // Swift
+        'pubspec.yaml', // Dart
+        'mix.exs', // Elixir
+        'mix.lock', // Elixir
+        '.csproj', // C#
+        'micronaut-cli.yml', // Micronaut
+      ].includes(name) ||
+      name.endsWith('.csproj') ||
+      name.endsWith('.fsproj')
+    );
   }
 
   private getExtension(filePath: string): string {

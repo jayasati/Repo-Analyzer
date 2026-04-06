@@ -10,8 +10,8 @@ export class EmailService implements OnModuleInit {
 
   onModuleInit(): void {
     this.transporter = nodemailer.createTransport({
-      host:   process.env.SMTP_HOST   ?? 'smtp.gmail.com',
-      port:   Number(process.env.SMTP_PORT ?? 587),
+      host: process.env.SMTP_HOST ?? 'smtp.gmail.com',
+      port: Number(process.env.SMTP_PORT ?? 587),
       secure: process.env.SMTP_SECURE === 'true',
       auth: {
         user: process.env.SMTP_USER,
@@ -21,16 +21,17 @@ export class EmailService implements OnModuleInit {
   }
 
   async sendAnalysisComplete(opts: {
-    to:        string;
-    repoUrl:   string;
-    score:     number;
+    to: string;
+    repoUrl: string;
+    score: number;
     framework: string;
-    cycles:    number;
-    smells:    number;
-    jobId:     string;
+    cycles: number;
+    smells: number;
+    jobId: string;
   }): Promise<void> {
-    const scoreColor = opts.score >= 80 ? '#22c55e' : opts.score >= 60 ? '#f59e0b' : '#ef4444';
-    const reportUrl  = `${process.env.APP_URL ?? 'http://localhost:3000'}/analyze/${opts.jobId}/report?format=html`;
+    const scoreColor =
+      opts.score >= 80 ? '#22c55e' : opts.score >= 60 ? '#f59e0b' : '#ef4444';
+    const reportUrl = `${process.env.APP_URL ?? 'http://localhost:3000'}/analyze/${opts.jobId}/report?format=html`;
 
     const html = `
       <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 24px;">
@@ -57,14 +58,18 @@ export class EmailService implements OnModuleInit {
 
     try {
       await this.transporter.sendMail({
-        from:    process.env.SMTP_FROM ?? 'noreply@repoanalyzer.dev',
-        to:      opts.to,
+        from: process.env.SMTP_FROM ?? 'noreply@repoanalyzer.dev',
+        to: opts.to,
         subject: `Analysis complete: ${opts.repoUrl.split('/').slice(-2).join('/')} — ${opts.score}/100`,
         html,
       });
       this.logger.log(`Email sent to ${opts.to}`, 'EmailService');
     } catch (err) {
-      this.logger.error(`Email failed: ${String(err)}`, undefined, 'EmailService');
+      this.logger.error(
+        `Email failed: ${String(err)}`,
+        undefined,
+        'EmailService',
+      );
     }
   }
 }

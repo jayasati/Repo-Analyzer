@@ -1,4 +1,4 @@
-import './env'; 
+import './env';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
@@ -15,13 +15,18 @@ async function bootstrap(): Promise<void> {
   const logger = app.get(AppLoggerService);
   app.useLogger(logger);
 
-//-------------------------CORS--------------------------------------//
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:3001')
+  //-------------------------CORS--------------------------------------//
+  const allowedOrigins = (
+    process.env.ALLOWED_ORIGINS ?? 'http://localhost:3001'
+  )
     .split(',')
-    .map(o => o.trim());
+    .map((o) => o.trim());
 
   const corsOptions: CorsOptions = {
-    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+    origin: (
+      origin: string | undefined,
+      callback: (err: Error | null, allow?: boolean) => void,
+    ) => {
       if (!origin) return callback(null, true);
 
       if (allowedOrigins.includes(origin)) {
@@ -37,27 +42,36 @@ async function bootstrap(): Promise<void> {
 
   app.enableCors(corsOptions);
 
-//------------------------------------------------------------------------//
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist:            true,
-    forbidNonWhitelisted: true,
-    transform:            true,
-  }));
+  //------------------------------------------------------------------------//
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
   app.useGlobalFilters(new GlobalExceptionFilter(logger));
   app.useGlobalInterceptors(new CorrelationIdInterceptor(logger));
-//-------------------------------------------------------------------------//
+  //-------------------------------------------------------------------------//
   const config = new DocumentBuilder()
     .setTitle('Repo Analyzer API')
     .setDescription('Architecture analysis for GitHub repositories')
     .setVersion('1.0')
     .build();
-  SwaggerModule.setup('api/docs', app, SwaggerModule.createDocument(app, config));
+  SwaggerModule.setup(
+    'api/docs',
+    app,
+    SwaggerModule.createDocument(app, config),
+  );
 
   app.enableShutdownHooks();
 
   await app.listen(process.env.PORT ?? 3000);
-  logger.log(`Application running on port ${process.env.PORT ?? 3000}`, 'Bootstrap');
+  logger.log(
+    `Application running on port ${process.env.PORT ?? 3000}`,
+    'Bootstrap',
+  );
 }
 
 bootstrap();

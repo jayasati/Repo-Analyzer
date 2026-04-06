@@ -10,7 +10,8 @@
 
 // ── Language tag union ────────────────────────────────────────────────────────
 export type SupportedLanguage =
-  | 'typescript' | 'javascript'
+  | 'typescript'
+  | 'javascript'
   | 'python'
   | 'java'
   | 'go'
@@ -23,38 +24,39 @@ export type SupportedLanguage =
   | 'scala'
   | 'dart'
   | 'elixir'
-  | 'c' | 'cpp'
+  | 'c'
+  | 'cpp'
   | 'unknown';
 
 // ── Extension → language map (used by callers that detect by file path) ───────
 export const EXT_TO_LANGUAGE: Readonly<Record<string, SupportedLanguage>> = {
-  '.ts':    'typescript',
-  '.tsx':   'typescript',
-  '.js':    'javascript',
-  '.jsx':   'javascript',
-  '.mjs':   'javascript',
-  '.cjs':   'javascript',
-  '.py':    'python',
-  '.java':  'java',
-  '.go':    'go',
-  '.cs':    'csharp',
-  '.rb':    'ruby',
-  '.php':   'php',
-  '.rs':    'rust',
-  '.kt':    'kotlin',
-  '.kts':   'kotlin',
+  '.ts': 'typescript',
+  '.tsx': 'typescript',
+  '.js': 'javascript',
+  '.jsx': 'javascript',
+  '.mjs': 'javascript',
+  '.cjs': 'javascript',
+  '.py': 'python',
+  '.java': 'java',
+  '.go': 'go',
+  '.cs': 'csharp',
+  '.rb': 'ruby',
+  '.php': 'php',
+  '.rs': 'rust',
+  '.kt': 'kotlin',
+  '.kts': 'kotlin',
   '.swift': 'swift',
   '.scala': 'scala',
-  '.sc':    'scala',
-  '.dart':  'dart',
-  '.ex':    'elixir',
-  '.exs':   'elixir',
-  '.c':     'c',
-  '.h':     'c',
-  '.cpp':   'cpp',
-  '.cc':    'cpp',
-  '.cxx':   'cpp',
-  '.hpp':   'cpp',
+  '.sc': 'scala',
+  '.dart': 'dart',
+  '.ex': 'elixir',
+  '.exs': 'elixir',
+  '.c': 'c',
+  '.h': 'c',
+  '.cpp': 'cpp',
+  '.cc': 'cpp',
+  '.cxx': 'cpp',
+  '.hpp': 'cpp',
 };
 
 // ── Main entry point ──────────────────────────────────────────────────────────
@@ -67,7 +69,7 @@ export const EXT_TO_LANGUAGE: Readonly<Record<string, SupportedLanguage>> = {
  *                 When omitted the function tries all pattern groups.
  */
 export function extractImports(
-  content:  string,
+  content: string,
   language: SupportedLanguage = 'unknown',
 ): string[] {
   const results = new Set<string>();
@@ -161,7 +163,6 @@ export function extractImports(
 // Patterns are intentionally kept narrow to avoid false positives.
 
 const PATTERNS: Readonly<Record<string, RegExp[]>> = {
-
   // ─── TypeScript / JavaScript ───────────────────────────────────────────────
   // Covers: ES static imports, dynamic imports, CommonJS require,
   //         export … from, re-exports, side-effect imports.
@@ -184,7 +185,7 @@ const PATTERNS: Readonly<Record<string, RegExp[]>> = {
   // Captures the module path (dotted or plain), not the symbol.
   python: [
     // from module.sub import name
-    /^\s*from\s+([\w.]+)\s+import\s+/gm,
+    /^\s*from\s+([.\w]+)\s+import\s+/gm,
 
     // import module  /  import module.sub
     /^\s*import\s+([\w.]+)/gm,
@@ -193,9 +194,7 @@ const PATTERNS: Readonly<Record<string, RegExp[]>> = {
   // ─── Java ─────────────────────────────────────────────────────────────────
   // import com.example.Foo;
   // import static com.example.Util.*;
-  java: [
-    /^\s*import\s+(?:static\s+)?([\w.]+(?:\.\*)?)\s*;/gm,
-  ],
+  java: [/^\s*import\s+(?:static\s+)?([\w.]+(?:\.\*)?)\s*;/gm],
 
   // ─── Go ───────────────────────────────────────────────────────────────────
   // import "fmt"
@@ -214,9 +213,7 @@ const PATTERNS: Readonly<Record<string, RegExp[]>> = {
   // using System.Collections.Generic;
   // using static System.Math;
   // global using Foo.Bar;
-  csharp: [
-    /^\s*(?:global\s+)?using\s+(?:static\s+)?([\w.]+)\s*;/gm,
-  ],
+  csharp: [/^\s*(?:global\s+)?using\s+(?:static\s+)?([\w.]+)\s*;/gm],
 
   // ─── Ruby ─────────────────────────────────────────────────────────────────
   // require 'active_record'
@@ -265,25 +262,19 @@ const PATTERNS: Readonly<Record<string, RegExp[]>> = {
   // import com.example.User
   // import com.example.*
   // import kotlin.collections.List
-  kotlin: [
-    /^\s*import\s+([\w.]+(?:\.\*)?)/gm,
-  ],
+  kotlin: [/^\s*import\s+([\w.]+(?:\.\*)?)/gm],
 
   // ─── Swift ────────────────────────────────────────────────────────────────
   // import Foundation
   // import UIKit
   // import MyFramework.MyModule  (@_implementationOnly import also supported)
-  swift: [
-    /^\s*(?:@_implementationOnly\s+)?import\s+([\w.]+)/gm,
-  ],
+  swift: [/^\s*(?:@_implementationOnly\s+)?import\s+([\w.]+)/gm],
 
   // ─── Scala ────────────────────────────────────────────────────────────────
   // import scala.collection.mutable.Map
   // import scala.collection.{List, Map}
   // import com.example._
-  scala: [
-    /^\s*import\s+([\w.]+(?:\._|\.\{[^}]+\})?)/gm,
-  ],
+  scala: [/^\s*import\s+([\w.]+(?:\._|\.\{[^}]+\})?)/gm],
 
   // ─── Dart ─────────────────────────────────────────────────────────────────
   // import 'dart:core';
@@ -312,7 +303,5 @@ const PATTERNS: Readonly<Record<string, RegExp[]>> = {
   // ─── C / C++ ──────────────────────────────────────────────────────────────
   // #include <stdio.h>
   // #include "myheader.h"
-  c_cpp: [
-    /#include\s+[<"]([^>"]+)[>"]/g,
-  ],
+  c_cpp: [/#include\s+[<"]([^>"]+)[>"]/g],
 };

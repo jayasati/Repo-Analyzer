@@ -7,14 +7,13 @@ import { ArchitectureMetrics } from '../metrics/architecture-metrics.types';
 
 @Injectable()
 export class ArchitectureScoreService {
-
   // ─── Scoring model constants ─────────────────────────────────────────────
   // Changing these is the only place needed to tune the scoring model.
 
   private static readonly WEIGHTS = {
     modularity: 0.35,
     coupling: 0.35,
-    smells: 0.30,
+    smells: 0.3,
   } as const;
 
   private static readonly MODULARITY = {
@@ -40,7 +39,7 @@ export class ArchitectureScoreService {
 
   // ─── DI ─────────────────────────────────────────────────────────────────
 
-  constructor(private readonly metricsService: ArchitectureMetricsService) { }
+  constructor(private readonly metricsService: ArchitectureMetricsService) {}
 
   // ─── Public API ──────────────────────────────────────────────────────────
 
@@ -74,7 +73,11 @@ export class ArchitectureScoreService {
 
       return {
         overall: Math.round(overall),
-        breakdown: { modularity: 50, coupling: 50, smells: Math.round(smellScore) },
+        breakdown: {
+          modularity: 50,
+          coupling: 50,
+          smells: Math.round(smellScore),
+        },
       };
     }
 
@@ -108,7 +111,8 @@ export class ArchitectureScoreService {
     if (metrics.moduleCount < 2) return 50;
 
     const { densityMultiplier } = ArchitectureScoreService.MODULARITY;
-    const score = 100 - Math.min(metrics.dependencyDensity * densityMultiplier, 100);
+    const score =
+      100 - Math.min(metrics.dependencyDensity * densityMultiplier, 100);
     return Math.max(score, 0);
   }
 
@@ -116,8 +120,12 @@ export class ArchitectureScoreService {
     const { avgFanOutPenaltyRate, maxFanOutPenaltyRate, maxHotspotPenalty } =
       ArchitectureScoreService.COUPLING;
 
-    const avgScore = 100 - Math.min(metrics.averageFanOut * avgFanOutPenaltyRate, 100);
-    const hotspotPenalty = Math.min(metrics.maxFanOut * maxFanOutPenaltyRate, maxHotspotPenalty);
+    const avgScore =
+      100 - Math.min(metrics.averageFanOut * avgFanOutPenaltyRate, 100);
+    const hotspotPenalty = Math.min(
+      metrics.maxFanOut * maxFanOutPenaltyRate,
+      maxHotspotPenalty,
+    );
 
     return Math.max(avgScore - hotspotPenalty, 0);
   }

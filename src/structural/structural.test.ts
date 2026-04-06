@@ -9,8 +9,8 @@ const tree = scanner.scan(process.cwd());
 const graph = analyzer.analyze(tree);
 const metrics = computeStructuralMetrics(graph);
 
-console.log("===== METRICS =====");
+console.log('===== METRICS =====');
 console.log(metrics);
 
-console.log("\n===== SAMPLE EDGES =====");
+console.log('\n===== SAMPLE EDGES =====');
 console.log(graph.edges.slice(0, 10));

@@ -11,11 +11,9 @@ export interface ASTImport {
 }
 
 export interface ASTResult {
-
   classes: ASTClass[];
 
   functions: ASTFunction[];
 
   imports: ASTImport[];
-
 }

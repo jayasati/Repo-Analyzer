@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 
-import { UnifiedGraph } from "../../graph/unified-graph.types";
+import { UnifiedGraph } from '../../graph/unified-graph.types';
 
 export interface PackageEdge {
   from: string;
-  to:   string;
+  to: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -19,11 +19,28 @@ export interface PackageEdge {
  * Gradle test: src/test/java/...      → skip "test" and "java"
  */
 const SKIP_SEGMENTS = new Set([
-  'main', 'test', 'tests', 'it', 'integrationTest', 'integrationTests',
-  'java', 'kotlin', 'scala', 'groovy', 'clojure',
-  'resources', 'webapp', 'web-app',
-  'python', 'lib', 'libs', 'library',
-  'app', 'src', 'source', 'sources',
+  'main',
+  'test',
+  'tests',
+  'it',
+  'integrationTest',
+  'integrationTests',
+  'java',
+  'kotlin',
+  'scala',
+  'groovy',
+  'clojure',
+  'resources',
+  'webapp',
+  'web-app',
+  'python',
+  'lib',
+  'libs',
+  'library',
+  'app',
+  'src',
+  'source',
+  'sources',
 ]);
 
 /**
@@ -31,10 +48,26 @@ const SKIP_SEGMENTS = new Set([
  * e.g. com / org / io / example in  com.example.service
  */
 const DOMAIN_SEGMENTS = new Set([
-  'com', 'org', 'io', 'net', 'edu', 'gov', 'co', 'me', 'dev',
-  'github', 'gitlab', 'bitbucket',
-  'google', 'microsoft', 'amazon', 'apache', 'eclipse',
-  'spring', 'springframework', 'springboot',
+  'com',
+  'org',
+  'io',
+  'net',
+  'edu',
+  'gov',
+  'co',
+  'me',
+  'dev',
+  'github',
+  'gitlab',
+  'bitbucket',
+  'google',
+  'microsoft',
+  'amazon',
+  'apache',
+  'eclipse',
+  'spring',
+  'springframework',
+  'springboot',
 ]);
 
 /**
@@ -43,10 +76,26 @@ const DOMAIN_SEGMENTS = new Set([
  * is the package name.
  */
 const TOPLEVEL_NAMESPACE_DIRS = new Set([
-  'internal', 'pkg', 'cmd', 'api', 'handler', 'handlers',
-  'service', 'services', 'repository', 'repositories',
-  'controller', 'controllers', 'domain', 'usecase', 'usecases',
-  'infrastructure', 'adapter', 'adapters', 'module', 'modules',
+  'internal',
+  'pkg',
+  'cmd',
+  'api',
+  'handler',
+  'handlers',
+  'service',
+  'services',
+  'repository',
+  'repositories',
+  'controller',
+  'controllers',
+  'domain',
+  'usecase',
+  'usecases',
+  'infrastructure',
+  'adapter',
+  'adapters',
+  'module',
+  'modules',
 ]);
 
 /**
@@ -59,17 +108,21 @@ const TOPLEVEL_NAMESPACE_DIRS = new Set([
  * FIRST meaningful directory after src/ (the top-level module).
  */
 const JAVA_STYLE_EXTS = new Set([
-  '.java', '.kt', '.kts', '.scala', '.groovy', '.clj',
+  '.java',
+  '.kt',
+  '.kts',
+  '.scala',
+  '.groovy',
+  '.clj',
 ]);
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 @Injectable()
 export class PackageGraphService {
-
   build(graph: UnifiedGraph): PackageEdge[] {
     const edges: PackageEdge[] = [];
-    const seen  = new Set<string>();
+    const seen = new Set<string>();
 
     for (const edge of graph.edges) {
       const fromPkg = this.extractTopLevelPackage(edge.from);
@@ -119,12 +172,12 @@ export class PackageGraphService {
    */
   private extractTopLevelPackage(filePath: string): string | null {
     const normalized = filePath.replace(/\\/g, '/');
-    const parts      = normalized.split('/').filter(p => p.length > 0);
+    const parts = normalized.split('/').filter((p) => p.length > 0);
 
     // Detect file extension
     const fileName = parts[parts.length - 1] ?? '';
-    const dotIdx   = fileName.lastIndexOf('.');
-    const ext      = dotIdx >= 0 ? fileName.slice(dotIdx).toLowerCase() : '';
+    const dotIdx = fileName.lastIndexOf('.');
+    const ext = dotIdx >= 0 ? fileName.slice(dotIdx).toLowerCase() : '';
     const isJavaLike = JAVA_STYLE_EXTS.has(ext);
 
     const srcIndex = parts.indexOf('src');
@@ -156,12 +209,16 @@ export class PackageGraphService {
    * Used for TypeScript, Python, PHP, Ruby — where the top-level module
    * folder immediately under src/ is the architectural unit.
    */
-  private firstMeaningfulDir(parts: string[], start: number, end: number): string | null {
+  private firstMeaningfulDir(
+    parts: string[],
+    start: number,
+    end: number,
+  ): string | null {
     for (let i = start; i < end; i++) {
       const seg = parts[i];
-      if (seg.includes('.'))                       return null; // hit a filename
-      if (SKIP_SEGMENTS.has(seg))                  continue;
-      if (DOMAIN_SEGMENTS.has(seg.toLowerCase()))  continue;
+      if (seg.includes('.')) return null; // hit a filename
+      if (SKIP_SEGMENTS.has(seg)) continue;
+      if (DOMAIN_SEGMENTS.has(seg.toLowerCase())) continue;
       return seg;
     }
     return null;
@@ -176,12 +233,16 @@ export class PackageGraphService {
    *      iterating backwards: file → skip "UserService.java" (contains dot)
    *      "service" → not boilerplate, not domain → return "service" ✓
    */
-  private lastMeaningfulDir(parts: string[], start: number, end: number): string | null {
+  private lastMeaningfulDir(
+    parts: string[],
+    start: number,
+    end: number,
+  ): string | null {
     for (let i = end - 1; i >= start; i--) {
       const seg = parts[i];
-      if (seg.includes('.'))                       continue; // file name
-      if (SKIP_SEGMENTS.has(seg))                  continue;
-      if (DOMAIN_SEGMENTS.has(seg.toLowerCase()))  continue;
+      if (seg.includes('.')) continue; // file name
+      if (SKIP_SEGMENTS.has(seg)) continue;
+      if (DOMAIN_SEGMENTS.has(seg.toLowerCase())) continue;
       return seg;
     }
     return null;

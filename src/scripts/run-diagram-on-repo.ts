@@ -18,7 +18,7 @@ async function run() {
 
   const classDiagram = prep.forClassDiagram(graph);
   const componentDiagram = prep.forComponentDiagram(graph);
-  const entryController = graph.nodes.find(n => n.type === 'controller')?.id;
+  const entryController = graph.nodes.find((n) => n.type === 'controller')?.id;
   const sequenceDiagram = entryController
     ? prep.forSequenceDiagram(graph, entryController)
     : null;
@@ -26,11 +26,20 @@ async function run() {
   const outDir = path.join(process.cwd(), 'diagrams');
   await fs.ensureDir(outDir);
 
-  await fs.writeFile(path.join(outDir, 'class-diagram.puml'), renderer.renderClassDiagram(classDiagram));
-  await fs.writeFile(path.join(outDir, 'component-diagram.puml'), renderer.renderComponentDiagram(componentDiagram));
+  await fs.writeFile(
+    path.join(outDir, 'class-diagram.puml'),
+    renderer.renderClassDiagram(classDiagram),
+  );
+  await fs.writeFile(
+    path.join(outDir, 'component-diagram.puml'),
+    renderer.renderComponentDiagram(componentDiagram),
+  );
 
   if (sequenceDiagram) {
-    await fs.writeFile(path.join(outDir, 'sequence-diagram.puml'), renderer.renderSequenceDiagram(sequenceDiagram));
+    await fs.writeFile(
+      path.join(outDir, 'sequence-diagram.puml'),
+      renderer.renderSequenceDiagram(sequenceDiagram),
+    );
   }
 
   await app.close();

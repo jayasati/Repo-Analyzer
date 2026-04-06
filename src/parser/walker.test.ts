@@ -1,10 +1,10 @@
-import { TreeSitterParserService } from "./tree-sitter-parser.service";
-import { TreeSitterWalkerService } from "./tree-sitter-walker.service";
+import { TreeSitterParserService } from './tree-sitter-parser.service';
+import { TreeSitterWalkerService } from './tree-sitter-walker.service';
 
 const parser = new TreeSitterParserService();
 const walker = new TreeSitterWalkerService();
 
-parser.setLanguage("TypeScript");
+parser.setLanguage('TypeScript');
 
 const code = `
 import { UserService } from "./user.service";

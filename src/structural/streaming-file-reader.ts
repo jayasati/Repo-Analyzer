@@ -1,4 +1,3 @@
-
 import * as readline from 'readline';
 import * as fs from 'fs';
 
@@ -16,7 +15,7 @@ export async function readImportSection(
   return new Promise((resolve, reject) => {
     const lines: string[] = [];
     const rl = readline.createInterface({
-      input:     fs.createReadStream(filePath),
+      input: fs.createReadStream(filePath),
       crlfDelay: Infinity,
     });
 

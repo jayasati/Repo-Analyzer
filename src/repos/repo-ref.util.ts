@@ -4,9 +4,15 @@ import { APP_CONSTANTS } from '../common/constants/app.constants';
 /**
  * Accepts `owner/repo` or `https://github.com/owner/repo` (.git optional).
  */
-export function parseGithubRepoFullName(input: string): { owner: string; repo: string; fullName: string } {
+export function parseGithubRepoFullName(input: string): {
+  owner: string;
+  repo: string;
+  fullName: string;
+} {
   const s = input.trim().replace(/\/+$/, '');
-  const urlMatch = s.match(/^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(\.git)?$/i);
+  const urlMatch = s.match(
+    /^https:\/\/github\.com\/([\w.-]+)\/([\w.-]+?)(\.git)?$/i,
+  );
   if (urlMatch && APP_CONSTANTS.GITHUB_URL_REGEX.test(s.split('?')[0])) {
     const owner = urlMatch[1];
     const repo = urlMatch[2];

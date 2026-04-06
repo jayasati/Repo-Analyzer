@@ -6,7 +6,6 @@ import { ArchitectureHealth } from './architecture-health.types';
 
 @Injectable()
 export class ArchitectureHealthService {
-
   /**
    * Minimum score (0–100) a dimension must reach to be considered healthy.
    * Adjust here to tune the health classification globally.
@@ -31,7 +30,9 @@ export class ArchitectureHealthService {
       return {
         score: 0,
         strengths: [],
-        weaknesses: ['Insufficient data — no inter-package dependencies detected'],
+        weaknesses: [
+          'Insufficient data — no inter-package dependencies detected',
+        ],
       };
     }
 

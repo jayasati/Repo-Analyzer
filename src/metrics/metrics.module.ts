@@ -3,8 +3,8 @@ import { MetricsService } from './metrics.service';
 import { MetricsController } from './metrics.controller';
 
 @Module({
-  providers:   [MetricsService],
+  providers: [MetricsService],
   controllers: [MetricsController],
-  exports:     [MetricsService],
+  exports: [MetricsService],
 })
 export class MetricsModule {}

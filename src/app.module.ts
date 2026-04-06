@@ -11,35 +11,36 @@ import { BullModule } from '@nestjs/bullmq';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { CoreModule }         from './core/core.module';
-import { ApiModule }          from './api/api.module';
-import { HealthModule }       from './health/health.module';
-import { LoggerModule }       from './common/logger/logger.module';
-import { QueueModule }        from './queue/queue.module';
-import { APP_CONSTANTS }      from './common/constants/app.constants';
-import { AuthModule }         from './auth/auth.module';
-import { PrismaModule }       from './prisma/prisma.module';
-import { ReposModule }        from './repos/repos.module';
-import { HistoryModule }      from './history/history.module';
+import { CoreModule } from './core/core.module';
+import { ApiModule } from './api/api.module';
+import { HealthModule } from './health/health.module';
+import { LoggerModule } from './common/logger/logger.module';
+import { APP_CONSTANTS } from './common/constants/app.constants';
+import { AuthModule } from './auth/auth.module';
+import { PrismaModule } from './prisma/prisma.module';
+import { ReposModule } from './repos/repos.module';
+import { HistoryModule } from './history/history.module';
 import { NotificationModule } from './notifications/notification.module';
-import { BadgeModule }        from './badge/badge.module';
-import { WebhookModule }      from './webhooks/webhook.module';
-import { PersistenceModule }  from './persistence/persistence.module';
-import { ReportModule }       from './report/report.module';
+import { BadgeModule } from './badge/badge.module';
+import { WebhookModule } from './webhooks/webhook.module';
+import { PersistenceModule } from './persistence/persistence.module';
+import { ReportModule } from './report/report.module';
 
 // ── New feature modules ───────────────────────────────────────────────────────
-import { GateModule }     from './gate/gate.module';
-import { RiskModule }     from './risk/risk.module';
-import { CopilotModule }  from './copilot/copilot.module';
+import { GateModule } from './gate/gate.module';
+import { RiskModule } from './risk/risk.module';
+import { CopilotModule } from './copilot/copilot.module';
 import { TimelineModule } from './timeline/timeline.module';
 
 @Module({
   imports: [
     EventEmitterModule.forRoot({ global: true }),
-    ThrottlerModule.forRoot([{
-      ttl:   APP_CONSTANTS.RATE_LIMIT_TTL_SECONDS * 1000,
-      limit: APP_CONSTANTS.RATE_LIMIT_MAX_REQUESTS,
-    }]),
+    ThrottlerModule.forRoot([
+      {
+        ttl: APP_CONSTANTS.RATE_LIMIT_TTL_SECONDS * 1000,
+        limit: APP_CONSTANTS.RATE_LIMIT_MAX_REQUESTS,
+      },
+    ]),
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST ?? 'localhost',
@@ -47,20 +48,19 @@ import { TimelineModule } from './timeline/timeline.module';
       },
     }),
     TypeOrmModule.forRoot({
-      type:             'postgres',
-      host:             process.env.DB_HOST    ,
-      port:             Number(process.env.DB_PORT ?? 5432),
-      username:         process.env.DB_USER     ,
-      password:         process.env.DB_PASSWORD ,
-      database:         process.env.DB_NAME     ?? 'repo_analyzer',
+      type: 'postgres',
+      host: process.env.DB_HOST,
+      port: Number(process.env.DB_PORT ?? 5432),
+      username: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME ?? 'repo_analyzer',
       autoLoadEntities: true,
-      synchronize:      true,
+      synchronize: true,
     }),
     LoggerModule,
     PrismaModule,
     HealthModule,
     CoreModule,
-    QueueModule,
     ApiModule,
     AuthModule,
     ReposModule,
@@ -72,17 +72,13 @@ import { TimelineModule } from './timeline/timeline.module';
     ReportModule,
 
     // ── New feature modules ─────────────────────────────────────────────────
-    GateModule,      // Architecture Gates   → /gate
-    RiskModule,      // Risk Scoring         → /risk
-    CopilotModule,   // Architecture Copilot → /copilot
-    TimelineModule,  // Time Travel          → /timeline
+    GateModule, // Architecture Gates   → /gate
+    RiskModule, // Risk Scoring         → /risk
+    CopilotModule, // Architecture Copilot → /copilot
+    TimelineModule, // Time Travel          → /timeline
   ],
 })
 export class AppModule {}
-
-
-
-
 
 // ── New API surface summary ────────────────────────────────────────────────────
 //
