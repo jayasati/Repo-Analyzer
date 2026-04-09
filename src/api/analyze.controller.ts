@@ -25,6 +25,7 @@ import { Query } from '@nestjs/common';
 import { ReportService } from '../report/report.service';
 import type { ReportFormat } from '../report/report.types';
 import { ApiOperation } from '@nestjs/swagger';
+import { SourceTreeEntry } from '../copilot/source-tree.types';
 
 @Controller('analyze')
 @UseGuards(ThrottlerGuard)
@@ -57,6 +58,8 @@ export class AnalyzeController {
         source: body.source,
         isGitHub,
         requestedAt: new Date().toISOString(),
+        branch: body.branch,
+        subdir: body.subdir,
       },
       {
         jobId,
@@ -83,6 +86,35 @@ export class AnalyzeController {
     if (!result)
       throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
     return result;
+  }
+
+  /**
+   * Returns source-tree entries for chat context selection.
+   * Uses cached source-tree when present; otherwise derives a best-effort tree
+   * from the analyzed graph so the UI can still render selectable scope.
+   */
+  @Get(':jobId/source-tree')
+  @SkipThrottle()
+  @ApiOperation({ summary: 'Get source tree for chat context selector' })
+  async getSourceTree(@Param('jobId') jobId: string) {
+    const cached = await this.cache.getSourceTree(jobId);
+    if (cached && cached.length > 0) {
+      return {
+        rootHint: 'cached',
+        entries: cached,
+      };
+    }
+
+    const result = await this.cache.get(jobId);
+    if (!result) {
+      throw new NotFoundException(`Job ${jobId} not found or not yet complete`);
+    }
+
+    const entries = this.deriveSourceTreeFromResult(result);
+    return {
+      rootHint: result.projectName ?? 'derived',
+      entries,
+    };
   }
 
   /**
@@ -152,5 +184,73 @@ export class AnalyzeController {
       `attachment; filename="report-${jobId}.${ext}"`,
     );
     res.send(content);
+  }
+
+  private deriveSourceTreeFromResult(
+    result: { unifiedGraph?: { nodes?: Array<{ id?: string }>; edges?: Array<{ from?: string; to?: string }> } },
+  ): SourceTreeEntry[] {
+    const fileSet = new Set<string>();
+    const dirSet = new Set<string>();
+
+    const normalize = (p: string): string => p.replace(/\\/g, '/').trim();
+    const ignored = (p: string): boolean => {
+      const x = p.toLowerCase();
+      return (
+        x.includes('/node_modules/') ||
+        x.includes('/.git/') ||
+        x.includes('/dist/') ||
+        x.includes('/build/') ||
+        x.includes('/coverage/') ||
+        x.includes('/.next/')
+      );
+    };
+    const isFileLike = (p: string): boolean => /\.[a-z0-9]+$/i.test(p);
+
+    const toRelativeFile = (raw: string): string | null => {
+      const p = normalize(raw);
+      if (!p || ignored(p) || !isFileLike(p)) return null;
+
+      // Prefer common source anchors for absolute paths.
+      for (const marker of ['/src/', '/app/', '/packages/', '/libs/', '/lib/']) {
+        const idx = p.lastIndexOf(marker);
+        if (idx >= 0) return p.slice(idx + 1);
+      }
+
+      // Keep already-relative paths.
+      if (!/^[a-zA-Z]:\//.test(p) && !p.startsWith('/')) return p;
+      return null;
+    };
+
+    const addFile = (raw: string | undefined): void => {
+      if (!raw) return;
+      const rel = toRelativeFile(raw);
+      if (!rel) return;
+      fileSet.add(rel);
+      const parts = rel.split('/').filter(Boolean);
+      for (let i = 1; i < parts.length; i += 1) {
+        dirSet.add(parts.slice(0, i).join('/'));
+      }
+    };
+
+    for (const n of result.unifiedGraph?.nodes ?? []) addFile(n.id);
+    for (const e of result.unifiedGraph?.edges ?? []) {
+      addFile(e.from);
+      addFile(e.to);
+    }
+
+    const dirEntries: SourceTreeEntry[] = Array.from(dirSet)
+      .sort((a, b) => {
+        const aDepth = a.split('/').length;
+        const bDepth = b.split('/').length;
+        if (aDepth !== bDepth) return aDepth - bDepth;
+        return a.localeCompare(b);
+      })
+      .map((path) => ({ path, type: 'dir' as const }));
+
+    const fileEntries: SourceTreeEntry[] = Array.from(fileSet)
+      .sort((a, b) => a.localeCompare(b))
+      .map((path) => ({ path, type: 'file' as const }));
+
+    return [...dirEntries, ...fileEntries];
   }
 }

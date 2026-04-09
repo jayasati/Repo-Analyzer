@@ -3,6 +3,8 @@ export interface AnalysisJobData {
   source: string;
   isGitHub: boolean;
   requestedAt: string;
+  branch?: string;
+  subdir?: string;
 }
 
 export type JobStatus =

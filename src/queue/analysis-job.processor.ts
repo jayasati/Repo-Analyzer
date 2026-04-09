@@ -21,7 +21,7 @@ export class AnalysisJobProcessor extends WorkerHost {
   }
 
   async process(job: Job<AnalysisJobData>): Promise<void> {
-    const { jobId, source, isGitHub } = job.data;
+    const { jobId, source, isGitHub, branch, subdir, requestedAt } = job.data;
 
     const emit = (status: string, message: string, progress: number): void => {
       this.emitter.emit('analysis.progress', {
@@ -34,6 +34,14 @@ export class AnalysisJobProcessor extends WorkerHost {
     };
 
     try {
+      await this.cache.setMeta({
+        jobId,
+        source,
+        isGitHub,
+        requestedAt,
+        branch,
+        subdir,
+      });
       emit(
         'cloning',
         isGitHub ? 'Cloning repository…' : 'Scanning local path…',
@@ -41,11 +49,13 @@ export class AnalysisJobProcessor extends WorkerHost {
       );
       emit('analyzing', 'Running analysis pipeline…', 30);
 
-      const result = isGitHub
-        ? await this.analyzer.analyzeGitHub(source)
-        : await this.analyzer.analyzeLocal(source);
+      const analyzed = isGitHub
+        ? await this.analyzer.analyzeGitHubWithSourceTree(source, { branch, subdir })
+        : await this.analyzer.analyzeLocalWithSourceTree(source);
+      const { result, sourceTree } = analyzed;
 
-      this.cache.set(jobId, result);
+      await this.cache.set(jobId, result);
+      await this.cache.setSourceTree(jobId, sourceTree);
       try {
         await this.history.save(source, result);
       } catch (persistErr) {

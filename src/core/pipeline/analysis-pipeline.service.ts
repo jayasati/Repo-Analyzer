@@ -15,6 +15,7 @@ import type { PipelineAnalyzers } from './pipeline-analyzers.types';
 import type { PipelineRenderers } from './pipeline-renderers.types';
 import { AnalysisPhaseResult } from './analysis-phase-result.type';
 import { PipelineResult } from './pipeline-result.type';
+import { SourceTreeEntry } from '../../copilot/source-tree.types';
 
 @Injectable()
 export class AnalysisPipelineService {
@@ -50,6 +51,36 @@ export class AnalysisPipelineService {
       analysis,
       detection,
     );
+  }
+
+  runWithSourceTree(path: string): {
+    result: PipelineResult;
+    sourceTree: SourceTreeEntry[];
+  } {
+    const { fileTree, detection } = this.runScanPhase(path);
+    const { unifiedGraph, packageEdges } = this.runGraphPhase(
+      fileTree,
+      detection,
+      path,
+    );
+    const analysis = this.runAnalysisPhase(packageEdges, detection);
+    const summary = this.runSummaryPhase(
+      path,
+      detection,
+      unifiedGraph,
+      analysis,
+    );
+    const diagrams = this.runDiagramPhase(unifiedGraph);
+    const result = this.assemblePipelineResult(
+      path,
+      summary,
+      diagrams,
+      unifiedGraph,
+      analysis,
+      detection,
+    );
+    const sourceTree = this.buildSourceTreeEntries(fileTree, path);
+    return { result, sourceTree };
   }
 
   // ─── Phase 1: Scan ────────────────────────────────────────────────────────
@@ -228,5 +259,55 @@ export class AnalysisPipelineService {
 
   private extractProjectName(path: string): string {
     return path.split(/[/\\]/).pop() ?? 'unknown';
+  }
+
+  private buildSourceTreeEntries(
+    fileTree: FileNode,
+    rootPath: string,
+  ): SourceTreeEntry[] {
+    const dirs = new Set<string>();
+    const files = new Set<string>();
+
+    const normalize = (p: string) => p.replace(/\\/g, '/');
+    const root = normalize(rootPath).replace(/\/+$/, '');
+
+    const walk = (node: FileNode): void => {
+      const normalizedPath = normalize(node.path);
+      if (!normalizedPath.startsWith(root)) return;
+      const relative = normalizedPath.slice(root.length).replace(/^\/+/, '');
+      if (!relative) {
+        node.children?.forEach(walk);
+        return;
+      }
+
+      if (node.type === 'folder') {
+        dirs.add(relative);
+        node.children?.forEach(walk);
+        return;
+      }
+
+      files.add(relative);
+      const parts = relative.split('/').filter(Boolean);
+      for (let i = 1; i < parts.length; i += 1) {
+        dirs.add(parts.slice(0, i).join('/'));
+      }
+    };
+
+    walk(fileTree);
+
+    const dirEntries = Array.from(dirs)
+      .sort((a, b) => {
+        const aDepth = a.split('/').length;
+        const bDepth = b.split('/').length;
+        if (aDepth !== bDepth) return aDepth - bDepth;
+        return a.localeCompare(b);
+      })
+      .map((path) => ({ path, type: 'dir' as const }));
+
+    const fileEntries = Array.from(files)
+      .sort((a, b) => a.localeCompare(b))
+      .map((path) => ({ path, type: 'file' as const }));
+
+    return [...dirEntries, ...fileEntries];
   }
 }

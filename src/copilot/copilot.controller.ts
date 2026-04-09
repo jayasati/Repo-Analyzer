@@ -9,12 +9,14 @@ import {
   NotFoundException,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { CopilotService, PREDEFINED_QUERIES } from './copilot.service';
 import { GraphQueryEngine } from './graph-query.engine';
 import { AnalysisCacheService } from '../cache/analysis-cache.service';
+import { SourceContextService } from './source-context.service';
 
 class AskDto {
   @IsString()
@@ -27,6 +29,31 @@ class AskDto {
   mode?: 'freeform' | 'predefined';
 }
 
+class SourcePackDto {
+  @IsOptional()
+  paths?: string[];
+
+  @IsOptional()
+  includeImportClosure?: boolean;
+
+  @IsOptional()
+  importDepth?: number;
+
+  @IsOptional()
+  maxTotalBytes?: number;
+
+  @IsOptional()
+  maxFileBytes?: number;
+
+  @IsOptional()
+  maxFiles?: number;
+}
+
+class SourceTreeDto {
+  @IsOptional()
+  maxEntries?: number;
+}
+
 @ApiTags('copilot')
 @Controller('copilot')
 export class CopilotController {
@@ -34,6 +61,7 @@ export class CopilotController {
     private readonly copilot: CopilotService,
     private readonly graphQuery: GraphQueryEngine,
     private readonly cache: AnalysisCacheService,
+    private readonly sourceContext: SourceContextService,
   ) {}
 
   /** List the canned quick-action queries */
@@ -99,5 +127,36 @@ export class CopilotController {
       question:
         'Give me a plain-English overview of this codebase: its structure, main concerns, biggest risks, and the top 3 things to improve.',
     });
+  }
+
+  /**
+   * POST /copilot/:jobId/source-pack
+   *
+   * Returns raw source code contents for the requested repo-relative paths.
+   * Used by the UI LLM chat to provide in-module context (e.g. src/auth/**).
+   */
+  @Post(':jobId/source-pack')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Build a bounded source-code context pack' })
+  async sourcePack(@Param('jobId') jobId: string, @Body() dto: SourcePackDto) {
+    return this.sourceContext.buildSourcePack(jobId, {
+      paths: Array.isArray(dto.paths) ? dto.paths : [],
+      includeImportClosure: Boolean(dto.includeImportClosure),
+      importDepth: dto.importDepth,
+      maxTotalBytes: dto.maxTotalBytes,
+      maxFileBytes: dto.maxFileBytes,
+      maxFiles: dto.maxFiles,
+    });
+  }
+
+  /**
+   * GET /copilot/:jobId/source-tree
+   *
+   * Returns a bounded, repo-relative source tree used by UI context picker.
+   */
+  @Get(':jobId/source-tree')
+  @ApiOperation({ summary: 'List a bounded source tree for context selection' })
+  async sourceTree(@Param('jobId') jobId: string, @Query() dto: SourceTreeDto) {
+    return this.sourceContext.buildSourceTree(jobId, dto.maxEntries);
   }
 }
