@@ -29,14 +29,15 @@ describe('TrendService', () => {
   });
 
   it('detects improving trend', async () => {
+    // Mock returns DESC order (newest first), service reverses to chronological
     mockRepo.find.mockResolvedValue([
       {
-        id: '1',
+        id: '3',
         analyzedAt: new Date(),
-        overallScore: 60,
-        modularityScore: 60,
-        couplingScore: 60,
-        smellsScore: 60,
+        overallScore: 72,
+        modularityScore: 72,
+        couplingScore: 72,
+        smellsScore: 72,
         cycleCount: 0,
         smellCount: 0,
       },
@@ -51,12 +52,12 @@ describe('TrendService', () => {
         smellCount: 0,
       },
       {
-        id: '3',
+        id: '1',
         analyzedAt: new Date(),
-        overallScore: 72,
-        modularityScore: 72,
-        couplingScore: 72,
-        smellsScore: 72,
+        overallScore: 60,
+        modularityScore: 60,
+        couplingScore: 60,
+        smellsScore: 60,
         cycleCount: 0,
         smellCount: 0,
       },
@@ -68,14 +69,15 @@ describe('TrendService', () => {
   });
 
   it('detects degrading trend', async () => {
+    // Mock returns DESC order (newest first), service reverses to chronological
     mockRepo.find.mockResolvedValue([
       {
-        id: '1',
+        id: '3',
         analyzedAt: new Date(),
-        overallScore: 80,
-        modularityScore: 80,
-        couplingScore: 80,
-        smellsScore: 80,
+        overallScore: 65,
+        modularityScore: 65,
+        couplingScore: 65,
+        smellsScore: 65,
         cycleCount: 0,
         smellCount: 0,
       },
@@ -90,12 +92,12 @@ describe('TrendService', () => {
         smellCount: 0,
       },
       {
-        id: '3',
+        id: '1',
         analyzedAt: new Date(),
-        overallScore: 65,
-        modularityScore: 65,
-        couplingScore: 65,
-        smellsScore: 65,
+        overallScore: 80,
+        modularityScore: 80,
+        couplingScore: 80,
+        smellsScore: 80,
         cycleCount: 0,
         smellCount: 0,
       },
