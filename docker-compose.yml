@@ -93,6 +93,27 @@ services:
       redis:
         condition: service_healthy
 
+  ui:
+    build:
+      context:    ../repo-analyzer-ui
+      dockerfile: Dockerfile
+      target:     production
+      args:
+        # NEXT_PUBLIC_* is baked at build time — browser uses this via /backend rewrite
+        NEXT_PUBLIC_API_URL: http://localhost:3000
+    container_name: repo-ui
+    restart: unless-stopped
+    env_file: ../repo-analyzer-ui/.env
+    environment:
+      NODE_ENV:           production
+      # Server-side (SSR / API routes) → reach the API via Docker network
+      API_URL:            http://api:3000
+      NEXTAUTH_URL:       http://localhost:3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      - api
+
 volumes:
   postgres_data:
   redis_data:

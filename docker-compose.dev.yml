@@ -28,3 +28,15 @@ services:
       - /app/node_modules
     environment:
       NODE_ENV: development
+
+  ui:
+    build:
+      target: development
+    volumes:
+      - ../repo-analyzer-ui:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      NODE_ENV: development
+    ports:
+      - "3001:3001"
