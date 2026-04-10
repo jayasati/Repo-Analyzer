@@ -2,7 +2,7 @@
 
 import { Injectable } from '@nestjs/common';
 import OpenAI from 'openai';
-import { PipelineResult } from '../core/pipeline/pipeline-result.type';
+import type { PipelineResult } from '../core/pipeline/pipeline-result.type';
 
 export type CopilotQueryMode = 'freeform' | 'predefined';
 

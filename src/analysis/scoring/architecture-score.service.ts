@@ -130,14 +130,37 @@ export class ArchitectureScoreService {
     return Math.max(avgScore - hotspotPenalty, 0);
   }
 
+  /**
+   * Computes smell score with diminishing penalties.
+   *
+   * Instead of linear stacking (which quickly reaches 0 with 5+ smells),
+   * each subsequent smell of the same severity tier applies a decreasing
+   * penalty: 100%, 75%, 50%, 35%, 25%... of the base penalty.
+   *
+   * Total penalty is capped at 90 so the floor is 10 (not 0).
+   * A score of 0 means "no data", not "terrible".
+   */
   private computeSmellScore(smells: ArchitectureSmell[]): number {
-    const penalties = ArchitectureScoreService.SMELL_PENALTIES;
+    const basePenalties = ArchitectureScoreService.SMELL_PENALTIES;
 
-    const totalPenalty = smells.reduce(
-      (sum, smell) => sum + (penalties[smell.type] ?? 10),
-      0,
-    );
+    // Sort by severity (highest penalty first) for fair diminishing
+    const sorted = [...smells].sort((a, b) => {
+      const pa = basePenalties[a.type] ?? 10;
+      const pb = basePenalties[b.type] ?? 10;
+      return pb - pa;
+    });
 
-    return Math.max(100 - totalPenalty, 0);
+    // Diminishing multipliers: 1.0, 0.75, 0.50, 0.35, 0.25, 0.20, ...
+    const diminishing = [1.0, 0.75, 0.50, 0.35, 0.25, 0.20, 0.15, 0.10, 0.10];
+
+    let totalPenalty = 0;
+    for (let i = 0; i < sorted.length; i++) {
+      const base = basePenalties[sorted[i].type] ?? 10;
+      const multiplier = diminishing[Math.min(i, diminishing.length - 1)];
+      totalPenalty += base * multiplier;
+    }
+
+    // Cap at 90 so floor is 10 (distinguishes "terrible" from "no data")
+    return Math.max(100 - Math.min(totalPenalty, 90), 10);
   }
 }

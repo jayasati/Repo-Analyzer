@@ -61,6 +61,12 @@ export const EXT_TO_LANGUAGE: Readonly<Record<string, SupportedLanguage>> = {
 
 // ── Main entry point ──────────────────────────────────────────────────────────
 
+export interface ImportResult {
+  path: string;
+  /** True if this is a type-only import (e.g. `import type { X }`, `export type { X } from`) */
+  typeOnly: boolean;
+}
+
 /**
  * Extracts all import paths from the given source content.
  *
@@ -71,8 +77,8 @@ export const EXT_TO_LANGUAGE: Readonly<Record<string, SupportedLanguage>> = {
 export function extractImports(
   content: string,
   language: SupportedLanguage = 'unknown',
-): string[] {
-  const results = new Set<string>();
+): ImportResult[] {
+  const results = new Map<string, ImportResult>();
 
   const add = (patterns: RegExp[]) => {
     for (const pattern of patterns) {
@@ -81,7 +87,16 @@ export function extractImports(
       let match: RegExpExecArray | null;
       while ((match = re.exec(content)) !== null) {
         const val = match[1]?.trim();
-        if (val) results.add(val);
+        if (!val) continue;
+        // Detect type-only: check if the full match contains 'import type' or 'export type'
+        const full = match[0];
+        const isTypeOnly =
+          /\bimport\s+type\b/.test(full) || /\bexport\s+type\b/.test(full);
+        // If already seen as a value import, don't downgrade to type-only
+        const existing = results.get(val);
+        if (!existing || (existing.typeOnly && !isTypeOnly)) {
+          results.set(val, { path: val, typeOnly: isTypeOnly });
+        }
       }
     }
   };
@@ -153,7 +168,7 @@ export function extractImports(
       }
   }
 
-  return Array.from(results);
+  return Array.from(results.values());
 }
 
 // ── Pattern library ───────────────────────────────────────────────────────────

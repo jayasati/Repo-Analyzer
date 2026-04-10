@@ -1,7 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { PipelineResult } from '../core/pipeline/pipeline-result.type';
+import type { PipelineResult } from '../core/pipeline/pipeline-result.type';
 import Redis from 'ioredis';
-import { SourceTreeEntry } from '../copilot/source-tree.types';
+import type { SourceTreeEntry } from '../copilot/source-tree.types';
 
 const CACHE_PREFIX = 'analysis:result:';
 const META_PREFIX = 'analysis:meta:';

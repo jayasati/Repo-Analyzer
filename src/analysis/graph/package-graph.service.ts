@@ -125,6 +125,9 @@ export class PackageGraphService {
     const seen = new Set<string>();
 
     for (const edge of graph.edges) {
+      // Skip type-only imports — they don't create real runtime dependencies
+      // and cause false positive cycles (e.g. `import type { X } from ...`)
+      if (edge.typeOnly) continue;
       const fromPkg = this.extractTopLevelPackage(edge.from);
       let toPkg = this.extractTopLevelPackage(edge.to);
 

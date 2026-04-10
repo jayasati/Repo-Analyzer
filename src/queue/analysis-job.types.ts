@@ -5,6 +5,10 @@ export interface AnalysisJobData {
   requestedAt: string;
   branch?: string;
   subdir?: string;
+  /** PR number (set when triggered by pull_request webhook) */
+  prNumber?: number;
+  /** PR head commit SHA (for commit status updates) */
+  prHeadSha?: string;
 }
 
 export type JobStatus =

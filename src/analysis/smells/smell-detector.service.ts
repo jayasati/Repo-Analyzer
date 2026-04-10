@@ -147,7 +147,7 @@ export class SmellDetectorService {
 
     return [
       ...this.detectGodModules(stats.fanOut, thresholds.godModule),
-      ...this.detectHubDependencies(stats.fanIn, thresholds.hubDependency),
+      ...this.detectHubDependencies(stats.fanIn, stats.fanOut, thresholds.hubDependency),
       ...this.detectDeadModules(stats),
       ...this.detectPackageTangles(packageEdges),
       ...this.detectUnstableAbstractions(
@@ -180,12 +180,29 @@ export class SmellDetectorService {
 
   // ── Hub dependency ────────────────────────────────────────────────────────
 
+  /**
+   * Detects hub dependencies — modules with too many incoming dependencies.
+   *
+   * Excludes infrastructure/cross-cutting modules: modules with high fan-in
+   * but low fan-out (≤ 1) are designated service providers (logging, config,
+   * common utils). Being imported by many is their PURPOSE, not a smell.
+   */
   private detectHubDependencies(
     fanIn: Map<string, number>,
+    fanOut: Map<string, number>,
     threshold: number,
   ): ArchitectureSmell[] {
     return Array.from(fanIn.entries())
-      .filter(([, count]) => count >= threshold)
+      .filter(([module, count]) => {
+        if (count < threshold) return false;
+
+        // Infrastructure heuristic: high fan-in + low fan-out = cross-cutting provider.
+        // These modules exist to be consumed by many — that's their job, not a smell.
+        const out = fanOut.get(module) ?? 0;
+        if (out <= 1) return false;
+
+        return true;
+      })
       .map(([module, count]) => ({
         type: 'hub-dependency' as const,
         message: `${module} is imported by ${count} modules — a change here has wide blast radius`,

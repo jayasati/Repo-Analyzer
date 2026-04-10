@@ -56,37 +56,74 @@ export class WebhookController {
       }
     }
 
-    // Only handle push events
-    if (event !== 'push') return { queued: false };
+    // Handle push events (default branch → full analysis)
+    if (event === 'push') {
+      const repoUrl = (body.repository as { html_url?: string })?.html_url;
+      const branch = ((body.ref as string) ?? '').replace('refs/heads/', '');
+      const defaultB =
+        (body.repository as { default_branch?: string })?.default_branch ??
+        'main';
 
-    const repoUrl = (body.repository as { html_url?: string })?.html_url;
-    const branch = ((body.ref as string) ?? '').replace('refs/heads/', '');
-    const defaultB =
-      (body.repository as { default_branch?: string })?.default_branch ??
-      'main';
+      if (branch !== defaultB) return { queued: false };
+      if (!repoUrl) return { queued: false };
 
-    // Only analyze pushes to the default branch
-    if (branch !== defaultB) return { queued: false };
+      const jobId = randomUUID();
+      await this.queue.add(
+        'analyze',
+        {
+          jobId,
+          source: repoUrl,
+          isGitHub: true,
+          requestedAt: new Date().toISOString(),
+        },
+        { jobId, attempts: 1, removeOnComplete: { count: 50 } },
+      );
 
-    if (!repoUrl) return { queued: false };
+      this.logger.log(
+        `Webhook: queued push analysis for ${repoUrl} @ ${branch} (job ${jobId})`,
+        'WebhookController',
+      );
+      return { queued: true, jobId };
+    }
 
-    const jobId = randomUUID();
-    await this.queue.add(
-      'analyze',
-      {
-        jobId,
-        source: repoUrl,
-        isGitHub: true,
-        requestedAt: new Date().toISOString(),
-      },
-      { jobId, attempts: 1, removeOnComplete: { count: 50 } },
-    );
+    // Handle pull_request events (opened/synchronize → PR analysis + comment)
+    if (event === 'pull_request') {
+      const action = body.action as string;
+      if (action !== 'opened' && action !== 'synchronize') {
+        return { queued: false };
+      }
 
-    this.logger.log(
-      `Webhook: queued analysis for ${repoUrl} @ ${branch} (job ${jobId})`,
-      'WebhookController',
-    );
+      const repoUrl = (body.repository as { html_url?: string })?.html_url;
+      const pr = body.pull_request as {
+        number: number;
+        head: { ref: string; sha: string };
+      } | undefined;
 
-    return { queued: true, jobId };
+      if (!repoUrl || !pr) return { queued: false };
+
+      const jobId = randomUUID();
+      await this.queue.add(
+        'analyze',
+        {
+          jobId,
+          source: repoUrl,
+          isGitHub: true,
+          branch: pr.head.ref,
+          requestedAt: new Date().toISOString(),
+          // Pass PR metadata for post-analysis comment + status
+          prNumber: pr.number,
+          prHeadSha: pr.head.sha,
+        },
+        { jobId, attempts: 1, removeOnComplete: { count: 50 } },
+      );
+
+      this.logger.log(
+        `Webhook: queued PR #${pr.number} analysis for ${repoUrl} @ ${pr.head.ref} (job ${jobId})`,
+        'WebhookController',
+      );
+      return { queued: true, jobId };
+    }
+
+    return { queued: false };
   }
 }

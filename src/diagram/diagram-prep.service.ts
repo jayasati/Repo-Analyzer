@@ -133,7 +133,10 @@ export class DiagramPrepService {
   forComponentDiagram(graph: UnifiedGraph): DiagramGraph {
     const moduleNodes = graph.nodes.filter((n) => n.type === 'module');
     if (moduleNodes.length > 0) {
-      return this.buildSemanticComponentDiagram(graph, moduleNodes);
+      const semantic = this.buildSemanticComponentDiagram(graph, moduleNodes);
+      // Merge: add any directories found in file-level analysis that are
+      // missing from the semantic module graph (directory-scan fallback)
+      return this.mergeWithPackageFallback(semantic, graph);
     }
     return this.buildPackageComponentDiagram(graph);
   }
@@ -157,6 +160,60 @@ export class DiagramPrepService {
       id: this.normalizeModuleId(n.id),
     }));
     return { nodes, edges };
+  }
+
+  /**
+   * Directory-scan fallback: after building the semantic component diagram,
+   * check if any src/* directories are missing. For each missing one, add
+   * a node + import edges from file-level analysis.
+   */
+  private mergeWithPackageFallback(
+    semantic: DiagramGraph,
+    graph: UnifiedGraph,
+  ): DiagramGraph {
+    const existingIds = new Set(semantic.nodes.map((n) => n.id.toLowerCase()));
+
+    // Build the full package-level diagram from file imports
+    const packageDiagram = this.buildPackageComponentDiagram(graph);
+
+    // Find packages that are in the file-level diagram but not in semantic
+    const missingNodes: GraphNode[] = [];
+    const missingEdges: GraphEdge[] = [];
+    const addedIds = new Set<string>();
+
+    for (const node of packageDiagram.nodes) {
+      if (!existingIds.has(node.id.toLowerCase())) {
+        missingNodes.push(node);
+        addedIds.add(node.id.toLowerCase());
+      }
+    }
+
+    // If no missing nodes, return semantic as-is
+    if (missingNodes.length === 0) return semantic;
+
+    // Add edges that connect to/from the new nodes
+    const allIds = new Set([
+      ...existingIds,
+      ...addedIds,
+    ]);
+
+    for (const edge of packageDiagram.edges) {
+      const fromLower = edge.from.toLowerCase();
+      const toLower = edge.to.toLowerCase();
+      // Include edge if at least one endpoint is new AND both exist
+      if (
+        allIds.has(fromLower) &&
+        allIds.has(toLower) &&
+        (addedIds.has(fromLower) || addedIds.has(toLower))
+      ) {
+        missingEdges.push(edge);
+      }
+    }
+
+    return {
+      nodes: [...semantic.nodes, ...missingNodes],
+      edges: [...semantic.edges, ...missingEdges],
+    };
   }
 
   private buildPackageComponentDiagram(graph: UnifiedGraph): DiagramGraph {

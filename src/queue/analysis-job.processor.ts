@@ -7,6 +7,9 @@ import { AnalyzerService } from '../core/analyzer.service';
 import { AnalysisCacheService } from '../cache/analysis-cache.service';
 import { AppLoggerService } from '../common/logger/app-logger.service';
 import { HistoryService } from '../history/history.service';
+import { GithubIntegrationService } from '../github/github-integration.service';
+import { GateService } from '../gate/gate.service';
+import type { GateContext } from '../gate/gate.types';
 
 @Processor(ANALYSIS_QUEUE, { concurrency: QUEUE_CONCURRENCY })
 export class AnalysisJobProcessor extends WorkerHost {
@@ -16,6 +19,8 @@ export class AnalysisJobProcessor extends WorkerHost {
     private readonly logger: AppLoggerService,
     private readonly emitter: EventEmitter2,
     private readonly history: HistoryService,
+    private readonly githubIntegration: GithubIntegrationService,
+    private readonly gate: GateService,
   ) {
     super();
   }
@@ -66,6 +71,53 @@ export class AnalysisJobProcessor extends WorkerHost {
           'AnalysisJobProcessor',
         );
       }
+      // ── GitHub PR integration: post comment + commit status ──────────────
+      if (job.data.prNumber && job.data.prHeadSha) {
+        try {
+          const { owner, repo: repoName } = this.parseRepoUrl(source);
+          const accessToken = process.env.GITHUB_APP_TOKEN ?? '';
+
+          if (accessToken && owner && repoName) {
+            const gateCtx: GateContext = {
+              overallScore: result.score.overall,
+              modularityScore: result.score.breakdown.modularity,
+              couplingScore: result.score.breakdown.coupling,
+              smellsScore: result.score.breakdown.smells,
+              cycleCount: result.cycles.length,
+              smellCount: result.smells.length,
+              avgFanOut: result.metrics.averageFanOut,
+              smellTypes: result.smells.map((s) => s.type),
+            };
+
+            const gateResult = this.gate.evaluate(gateCtx, null);
+
+            await this.githubIntegration.postPRComment({
+              owner,
+              repo: repoName,
+              prNumber: job.data.prNumber,
+              accessToken,
+              jobId,
+              gateResult,
+              repoUrl: source,
+            });
+
+            await this.githubIntegration.setCommitStatus({
+              owner,
+              repo: repoName,
+              sha: job.data.prHeadSha,
+              accessToken,
+              gateResult,
+            });
+          }
+        } catch (prErr) {
+          const msg = prErr instanceof Error ? prErr.message : String(prErr);
+          this.logger.warn(
+            `Job ${jobId} PR integration skipped: ${msg}`,
+            'AnalysisJobProcessor',
+          );
+        }
+      }
+
       emit('complete', 'Analysis complete', 100);
       this.logger.log(`Job ${jobId} completed`, 'AnalysisJobProcessor');
     } catch (err) {
@@ -78,5 +130,17 @@ export class AnalysisJobProcessor extends WorkerHost {
       );
       throw err;
     }
+  }
+
+  /** Extracts owner and repo name from a GitHub URL. */
+  private parseRepoUrl(url: string): { owner: string; repo: string } {
+    // Handles: https://github.com/owner/repo, https://github.com/owner/repo.git
+    const match = url.match(
+      /github\.com[/:]([^/]+)\/([^/.]+)/,
+    );
+    return {
+      owner: match?.[1] ?? '',
+      repo: match?.[2] ?? '',
+    };
   }
 }

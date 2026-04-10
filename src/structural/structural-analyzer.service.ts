@@ -83,9 +83,9 @@ export class StructuralAnalyzerService {
 
       // Java imports are package names, not file paths
       if (language === 'java' || language === 'kotlin') {
-        resolved = this.resolveJavaImport(imp);
+        resolved = this.resolveJavaImport(imp.path);
       } else {
-        resolved = resolveImport(node.path, imp, language, projectRoot);
+        resolved = resolveImport(node.path, imp.path, language, projectRoot);
       }
 
       if (!resolved) return;
@@ -98,6 +98,7 @@ export class StructuralAnalyzerService {
         from: normalizedPath,
         to: normalizedResolved,
         type: 'import',
+        ...(imp.typeOnly ? { typeOnly: true } : {}),
       });
     });
   }

@@ -25,6 +25,8 @@ export interface GraphEdge {
   from: string;
   to: string;
   type: EdgeType;
+  /** True if this edge comes from a type-only import (e.g. `import type { X }`) */
+  typeOnly?: boolean;
 }
 
 export interface UnifiedGraph {

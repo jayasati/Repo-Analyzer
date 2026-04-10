@@ -4,7 +4,7 @@
 // Handles the most common developer questions without burning API credits.
 
 import { Injectable } from '@nestjs/common';
-import { PipelineResult } from '../core/pipeline/pipeline-result.type';
+import type { PipelineResult } from '../core/pipeline/pipeline-result.type';
 
 type QueryResult = {
   type: string;
