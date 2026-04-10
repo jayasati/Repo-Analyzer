@@ -86,11 +86,38 @@ const JAVA_STYLE_EXTS = new Set([
   '.clj',
 ]);
 
+// ── Node-filtering constants ───────────────────────────────────────────────────
+
+/** Language primitives and built-in types that should never appear in diagrams. */
+const PRIMITIVE_TYPES = new Set([
+  // TypeScript / JavaScript
+  'string', 'number', 'boolean', 'any', 'unknown', 'void', 'never',
+  'undefined', 'null', 'object', 'symbol', 'bigint',
+  'String', 'Number', 'Boolean', 'Object', 'Symbol', 'BigInt',
+  'Array', 'Map', 'Set', 'Promise', 'Observable', 'Date', 'RegExp', 'Error',
+  'Buffer', 'Uint8Array', 'ReadableStream', 'WritableStream',
+  // Java / C# / Go
+  'int', 'long', 'float', 'double', 'char', 'byte', 'short',
+  'Integer', 'Long', 'Float', 'Double', 'Char', 'Byte', 'Short',
+  'List', 'ArrayList', 'HashMap', 'HashSet', 'LinkedList', 'Optional',
+  'Task', 'IDisposable', 'IEnumerable', 'ILogger',
+  'error', 'context', 'Context',
+]);
+
+/** Module/package prefixes that indicate 3rd-party or framework code. */
+const FRAMEWORK_PREFIXES = [
+  '@nestjs', '@angular', '@types', 'rxjs', 'typeorm', 'mongoose',
+  'fs', 'path', 'http', 'https', 'crypto', 'os', 'net', 'stream',
+  'child_process', 'cluster', 'events', 'util', 'url', 'zlib',
+  'node:', 'express', 'fastify', 'koa',
+];
+
 @Injectable()
 export class DiagramPrepService {
   forClassDiagram(graph: UnifiedGraph): DiagramGraph {
     const edges = this.normalizeEdges(
       graph.edges.filter((e) => e.type === 'constructor-injection'),
+      graph,
     );
     const nodeIds = new Set(edges.flatMap((e) => [e.from, e.to]));
     const nodes = graph.nodes
@@ -161,24 +188,81 @@ export class DiagramPrepService {
   forSequenceDiagram(
     graph: UnifiedGraph,
     entryPoint: string,
-    maxDepth = 3,
+    maxDepth = 5,
   ): DiagramGraph {
     const edges = this.normalizeEdges(
       graph.edges.filter((e) => e.type === 'constructor-injection'),
+      graph,
     );
+
+    // Build adjacency: who does each node call?
+    const outgoing = new Map<string, GraphEdge[]>();
+    // Build reverse adjacency: who calls each node?
+    const incoming = new Map<string, Set<string>>();
+    for (const e of edges) {
+      if (!outgoing.has(e.from)) outgoing.set(e.from, []);
+      outgoing.get(e.from)!.push(e);
+      if (!incoming.has(e.to)) incoming.set(e.to, new Set());
+      incoming.get(e.to)!.add(e.from);
+    }
+
+    // Walk from entry point, collecting reachable nodes & edges
     const visited = new Set<string>();
     const resultEdges: GraphEdge[] = [];
     const walk = (node: string, depth: number) => {
       if (depth > maxDepth || visited.has(node)) return;
       visited.add(node);
-      edges
-        .filter((e) => e.from === node)
-        .forEach((e) => {
-          resultEdges.push(e);
-          walk(e.to, depth + 1);
-        });
+      const callees = outgoing.get(node) ?? [];
+      for (const e of callees) {
+        resultEdges.push(e);
+        walk(e.to, depth + 1);
+      }
     };
-    walk(this.normalizeId(entryPoint), 0);
+
+    const normalizedEntry = this.normalizeId(entryPoint);
+    walk(normalizedEntry, 0);
+
+    // Strategy A: Orphan root detection for async processors.
+    //
+    // An orphan root is a node that processes the SAME request as the
+    // entry controller but was triggered asynchronously (via queue/events).
+    //
+    // Criteria (all must be true):
+    //   1. NOT already reached from the controller's call chain
+    //   2. NOT a controller itself (other controllers handle different routes)
+    //   3. HAS outgoing edges (it initiates a real processing chain)
+    //   4. Shares at least one callee with the controller's chain
+    //      (proving it processes the same data, not unrelated work)
+    //   5. Has 2+ callees (rules out simple wrappers / single-dep nodes)
+    for (const node of graph.nodes) {
+      const id = this.normalizeId(node.id);
+      if (visited.has(id)) continue;
+
+      // Exclude other controllers — they handle separate routes
+      if (node.type === 'controller') continue;
+
+      const orphanCallees = outgoing.get(id) ?? [];
+      if (orphanCallees.length < 2) continue;
+
+      // Must share at least one callee with the controller's existing chain.
+      // This ensures the orphan is processing the same request's data.
+      const orphanCalleeIds = new Set(orphanCallees.map((e) => e.to));
+      const sharesCallee = Array.from(orphanCalleeIds).some((calleeId) =>
+        visited.has(calleeId),
+      );
+      if (!sharesCallee) continue;
+
+      // Stitch: controller --async--> orphan processor
+      resultEdges.push({
+        from: normalizedEntry,
+        to: id,
+        type: 'constructor-injection',
+      });
+
+      walk(id, 1);
+    }
+
+    // Collect surviving nodes
     const seenIds = new Set<string>();
     const nodes = graph.nodes
       .filter((n) => visited.has(this.normalizeId(n.id)))
@@ -291,21 +375,54 @@ export class DiagramPrepService {
     return null;
   }
 
-  private isValidNode(id: string): boolean {
-    if (['string', 'number', 'boolean', 'any', 'unknown', 'void'].includes(id))
-      return false;
-    if (['@nestjs', 'fs', 'path', 'rxjs'].some((p) => id.startsWith(p)))
-      return false;
+  /**
+   * Strategy A: Source-membership check.
+   *
+   * A node is valid if:
+   * 1. It's not a language primitive
+   * 2. It's not a framework prefix (@nestjs, rxjs, etc.)
+   * 3. It exists in the graph's node list (source-membership)
+   *
+   * Edge targets NOT in graph.nodes are external/framework types
+   * (e.g. Redis, Queue, JwtService) — they were never parsed from
+   * a source file, so they have no corresponding node.
+   *
+   * This replaces the old hardcoded FRAMEWORK_TYPES set.
+   */
+  private isValidNode(id: string, knownNodeIds?: Set<string>): boolean {
+    if (PRIMITIVE_TYPES.has(id)) return false;
+    if (FRAMEWORK_PREFIXES.some((p) => id.startsWith(p))) return false;
+
+    // Source-membership: if we have a known-nodes set, reject IDs not in it
+    if (knownNodeIds && !knownNodeIds.has(id)) return false;
+
     return true;
   }
 
-  private normalizeEdges(edges: GraphEdge[]): GraphEdge[] {
+  /**
+   * Normalizes edges and filters out invalid nodes.
+   * When `graph` is provided, uses source-membership to reject
+   * edge endpoints that don't exist as declared nodes.
+   */
+  private normalizeEdges(
+    edges: GraphEdge[],
+    graph?: UnifiedGraph,
+  ): GraphEdge[] {
+    // Build known-node ID set for source-membership filtering
+    const knownIds = graph
+      ? new Set(graph.nodes.map((n) => this.normalizeId(n.id)))
+      : undefined;
+
     return edges
       .map((e) => ({
         ...e,
         from: this.normalizeId(e.from),
         to: this.normalizeId(e.to),
       }))
-      .filter((e) => this.isValidNode(e.from) && this.isValidNode(e.to));
+      .filter(
+        (e) =>
+          this.isValidNode(e.from, knownIds) &&
+          this.isValidNode(e.to, knownIds),
+      );
   }
 }

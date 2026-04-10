@@ -12,6 +12,7 @@ import { ArchitectureScoreService } from '../analysis/scoring/architecture-score
 import { RepoSummaryService } from '../analysis/insights/repo-summary.service';
 import { DiagramPrepService } from '../diagram/diagram-prep.service';
 import { PlantUmlRendererService } from '../diagram/plantuml-renderer.service';
+import { DiagramFilterService } from '../diagram/diagram-filter.service';
 import { HotspotDetectorService } from '../analysis/insights/hotspot-detector.service';
 import { ImpactAnalyzerService } from '../analysis/impact/impact-analyzer.service';
 import { ArchitectureHealthService } from '../analysis/reports/architecture-health.service';
@@ -50,6 +51,7 @@ const pipeline = new AnalysisPipelineService(
   {
     diagramPrep: new DiagramPrepService(),
     renderer: new PlantUmlRendererService(),
+    diagramFilter: new DiagramFilterService(),
   },
 );
 

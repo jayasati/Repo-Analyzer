@@ -1,6 +1,8 @@
 export interface SemanticNode {
   id: string;
   type: string;
+  /** Relative file path where this node was found (e.g. "src/auth/auth.service.ts") */
+  filePath?: string;
 }
 
 export interface SemanticEdge {

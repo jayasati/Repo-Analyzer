@@ -126,7 +126,7 @@ const PRIMITIVES = new Set([
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type SemanticNode = { id: string; type: string };
+type SemanticNode = { id: string; type: string; filePath?: string };
 type SemanticEdge = { from: string; to: string; type: string };
 
 // ── Analyzer ──────────────────────────────────────────────────────────────────
@@ -152,9 +152,14 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
         const content = fs.readFileSync(filePath, 'utf-8');
         if (!content.trim()) return;
 
+        // Compute relative path for directory-based grouping
+        const relPath = path
+          .relative(projectPath, filePath)
+          .replace(/\\/g, '/');
+
         this.parser.setLanguage(langKey);
         const tree = this.parser.parse(content);
-        this.extractFromTree(tree, langKey, nodes, edges);
+        this.extractFromTree(tree, langKey, nodes, edges, relPath);
       } catch {
         // Skip unparseable files — never let semantic analysis crash the pipeline
       }
@@ -170,47 +175,48 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     langKey: string,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     switch (langKey) {
       case 'typescript':
       case 'javascript':
-        return this.extractTS(tree, nodes, edges);
+        return this.extractTS(tree, nodes, edges, filePath);
 
       case 'python':
-        return this.extractPython(tree, nodes, edges);
+        return this.extractPython(tree, nodes, edges, filePath);
 
       case 'java':
-        return this.extractJava(tree, nodes, edges);
+        return this.extractJava(tree, nodes, edges, filePath);
 
       case 'go':
-        return this.extractGo(tree, nodes, edges);
+        return this.extractGo(tree, nodes, edges, filePath);
 
       case 'csharp':
-        return this.extractCSharp(tree, nodes, edges);
+        return this.extractCSharp(tree, nodes, edges, filePath);
 
       case 'ruby':
-        return this.extractRuby(tree, nodes, edges);
+        return this.extractRuby(tree, nodes, edges, filePath);
 
       case 'php':
-        return this.extractPhp(tree, nodes, edges);
+        return this.extractPhp(tree, nodes, edges, filePath);
 
       case 'rust':
-        return this.extractRust(tree, nodes, edges);
+        return this.extractRust(tree, nodes, edges, filePath);
 
       case 'kotlin':
-        return this.extractKotlin(tree, nodes, edges);
+        return this.extractKotlin(tree, nodes, edges, filePath);
 
       case 'swift':
-        return this.extractSwift(tree, nodes, edges);
+        return this.extractSwift(tree, nodes, edges, filePath);
 
       case 'scala':
-        return this.extractScala(tree, nodes, edges);
+        return this.extractScala(tree, nodes, edges, filePath);
 
       case 'dart':
-        return this.extractDart(tree, nodes, edges);
+        return this.extractDart(tree, nodes, edges, filePath);
 
       case 'elixir':
-        return this.extractElixir(tree, nodes, edges);
+        return this.extractElixir(tree, nodes, edges, filePath);
     }
   }
 
@@ -224,12 +230,13 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (this.isClassNode(node.type)) {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveNodeTypeByName(name) });
+          nodes.push({ id: name, type: this.resolveNodeTypeByName(name), filePath });
           this.extractConstructorEdgesTS(node, name, edges);
         }
       }
@@ -308,12 +315,13 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (node.type === 'class_definition') {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolvePythonNodeType(name) });
+          nodes.push({ id: name, type: this.resolvePythonNodeType(name), filePath });
           this.extractPythonInitEdges(node, name, edges);
         }
       }
@@ -381,6 +389,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (
@@ -393,6 +402,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
           nodes.push({
             id: name,
             type: this.resolveJavaNodeType(name, annotations),
+            filePath,
           });
           this.extractJavaConstructorEdges(node, name, edges);
         }
@@ -485,6 +495,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const structs = new Set<string>();
 
@@ -495,7 +506,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
         const typeNode = node.childForFieldName('type');
         if (name && typeNode?.type === 'struct_type') {
           structs.add(name);
-          nodes.push({ id: name, type: this.resolveGoNodeType(name) });
+          nodes.push({ id: name, type: this.resolveGoNodeType(name), filePath });
         }
       }
       for (const child of node.children) collectStructs(child);
@@ -563,6 +574,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (
@@ -571,7 +583,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
       ) {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveCSharpNodeType(name) });
+          nodes.push({ id: name, type: this.resolveCSharpNodeType(name), filePath });
           this.extractCSharpConstructorEdges(node, name, edges);
         }
       }
@@ -640,12 +652,13 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (node.type === 'class') {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveRubyNodeType(name) });
+          nodes.push({ id: name, type: this.resolveRubyNodeType(name), filePath });
           this.extractRubyInitializeEdges(node, name, edges);
         }
       }
@@ -705,12 +718,13 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (node.type === 'class_declaration') {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolvePhpNodeType(name) });
+          nodes.push({ id: name, type: this.resolvePhpNodeType(name), filePath });
           this.extractPhpConstructorEdges(node, name, edges);
         }
       }
@@ -773,6 +787,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const structs = new Set<string>();
 
@@ -781,7 +796,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
         const name = node.childForFieldName('name')?.text;
         if (name) {
           structs.add(name);
-          nodes.push({ id: name, type: this.resolveRustNodeType(name) });
+          nodes.push({ id: name, type: this.resolveRustNodeType(name), filePath });
         }
       }
       for (const child of node.children) collectStructs(child);
@@ -869,6 +884,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (
@@ -877,7 +893,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
       ) {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveNodeTypeByName(name) });
+          nodes.push({ id: name, type: this.resolveNodeTypeByName(name), filePath });
           this.extractKotlinPrimaryCtorEdges(node, name, edges);
         }
       }
@@ -922,6 +938,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (
@@ -930,7 +947,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
       ) {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveSwiftNodeType(name) });
+          nodes.push({ id: name, type: this.resolveSwiftNodeType(name), filePath });
           this.extractSwiftInitEdges(node, name, edges);
         }
       }
@@ -990,6 +1007,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (
@@ -999,7 +1017,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
       ) {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveNodeTypeByName(name) });
+          nodes.push({ id: name, type: this.resolveNodeTypeByName(name), filePath });
           this.extractScalaCtorEdges(node, name, edges);
         }
       }
@@ -1041,12 +1059,13 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (node.type === 'class_declaration') {
         const name = node.childForFieldName('name')?.text;
         if (name) {
-          nodes.push({ id: name, type: this.resolveDartNodeType(name) });
+          nodes.push({ id: name, type: this.resolveDartNodeType(name), filePath });
           this.extractDartCtorEdges(node, name, edges);
         }
       }
@@ -1110,6 +1129,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
     tree: any,
     nodes: SemanticNode[],
     edges: SemanticEdge[],
+    filePath?: string,
   ): void {
     const visit = (node: any) => {
       if (
@@ -1121,7 +1141,7 @@ export class TreeSitterAnalyzer implements SemanticAnalyzer {
         const name = nameNode?.text;
         if (name) {
           const nodeType = this.resolveElixirNodeType(node);
-          nodes.push({ id: name, type: nodeType });
+          nodes.push({ id: name, type: nodeType, filePath });
           this.extractElixirUseEdges(node, name, edges);
         }
       }

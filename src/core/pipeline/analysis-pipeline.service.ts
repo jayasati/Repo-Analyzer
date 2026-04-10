@@ -207,15 +207,27 @@ export class AnalysisPipelineService {
   private runDiagramPhase(
     unifiedGraph: UnifiedGraph,
   ): PipelineResult['diagrams'] {
+    // Class & sequence diagrams use the RAW unified graph —
+    // DiagramPrepService already filters for constructor-injection edges
+    // and controller/service/class nodes, so pre-filtering would strip
+    // semantic nodes that only exist as class names (not file paths).
     const classGraph = this.render.diagramPrep.forClassDiagram(unifiedGraph);
-    const componentGraph =
-      this.render.diagramPrep.forComponentDiagram(unifiedGraph);
 
     const entryPoint =
       this.render.diagramPrep.resolveSequenceEntryPoint(unifiedGraph);
     const sequenceGraph = entryPoint
       ? this.render.diagramPrep.forSequenceDiagram(unifiedGraph, entryPoint)
       : null;
+
+    // Component diagram benefits from noise filtering — it operates on
+    // file-path / module-level nodes where 3rd-party and config files
+    // create clutter.
+    const filteredForComponent = this.render.diagramFilter.filter(
+      unifiedGraph,
+      { maxNodes: 30 },
+    );
+    const componentGraph =
+      this.render.diagramPrep.forComponentDiagram(filteredForComponent);
 
     return {
       classDiagram: this.render.renderer.renderClassDiagram(classGraph),

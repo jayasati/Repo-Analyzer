@@ -11,7 +11,7 @@ import {
 export class GraphMergeService {
   merge(
     structural: { nodes: { id: string; type: string }[]; edges: GraphEdge[] },
-    semantic: { nodes: { id: string; type: string }[]; edges: GraphEdge[] },
+    semantic: { nodes: { id: string; type: string; filePath?: string }[]; edges: GraphEdge[] },
   ): UnifiedGraph {
     const nodeMap = new Map<string, GraphNode>();
 
@@ -32,6 +32,7 @@ export class GraphMergeService {
         id: node.id,
         type: node.type as NodeType, // NodeType union includes 'unknown' as a valid fallback
         source: 'semantic',
+        ...(node.filePath ? { filePath: node.filePath } : {}),
       });
     }
 

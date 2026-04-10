@@ -39,6 +39,7 @@ import { RepoSummaryService } from '../analysis/insights/repo-summary.service';
 // Render-phase services
 import { DiagramPrepService } from '../diagram/diagram-prep.service';
 import { PlantUmlRendererService } from '../diagram/plantuml-renderer.service';
+import { DiagramFilterService } from '../diagram/diagram-filter.service';
 
 @Module({
   imports: [
@@ -128,8 +129,9 @@ import { PlantUmlRendererService } from '../diagram/plantuml-renderer.service';
       useFactory: (
         diagramPrep: DiagramPrepService,
         renderer: PlantUmlRendererService,
-      ) => ({ diagramPrep, renderer }),
-      inject: [DiagramPrepService, PlantUmlRendererService],
+        diagramFilter: DiagramFilterService,
+      ) => ({ diagramPrep, renderer, diagramFilter }),
+      inject: [DiagramPrepService, PlantUmlRendererService, DiagramFilterService],
     },
   ],
   exports: [AnalyzerService, AnalysisPipelineService],

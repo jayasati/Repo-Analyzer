@@ -17,6 +17,8 @@ export interface GraphNode {
   id: string;
   type: NodeType;
   source: 'structural' | 'semantic';
+  /** Relative file path where this node was defined (semantic nodes only) */
+  filePath?: string;
 }
 
 export interface GraphEdge {

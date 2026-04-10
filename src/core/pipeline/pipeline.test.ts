@@ -24,6 +24,7 @@ import { RepoSummaryService } from '../../analysis/insights/repo-summary.service
 // Render-phase services
 import { DiagramPrepService } from '../../diagram/diagram-prep.service';
 import { PlantUmlRendererService } from '../../diagram/plantuml-renderer.service';
+import { DiagramFilterService } from '../../diagram/diagram-filter.service';
 
 // ─── Instantiate service groups (mirrors the NestJS DI token factories) ──────
 
@@ -56,6 +57,7 @@ const pipeline = new AnalysisPipelineService(
   {
     diagramPrep: new DiagramPrepService(),
     renderer: new PlantUmlRendererService(),
+    diagramFilter: new DiagramFilterService(),
   },
 );
 
